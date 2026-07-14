@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Relatórios{% endblock %}
+{% block page_title %}Relatórios e Indicadores{% endblock %}
+{% block page_subtitle %}Análise de desempenho do Service Desk{% endblock %}
+
+{% block content %}
+<!-- Filtro de período -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Período</label>
+                <select name="period" class="form-select" onchange="this.form.submit()">
+                    <option value="week" {% if period == 'week' %}selected{% endif %}>Últimos 7 dias</option>
+                    <option value="month" {% if period == 'month' %}selected{% endif %}>Últimos 30 dias</option>
+                    <option value="quarter" {% if period == 'quarter' %}selected{% endif %}>Últimos 90 dias</option>
+                    <option value="year" {% if period == 'year' %}selected{% endif %}>Último ano</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <a href="{{ url_for('admin_reports') }}?period={{ period }}&export=pdf" class="btn btn-danger">
+                    <i class="bi bi-filetype-pdf me-1"></i> Exportar PDF
+                </a>
+                <a href="{{ url_for('admin_reports') }}?period={{ period }}&export=xlsx" class="btn btn-success">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
+                </a>
+                <a href="{{ url_for('admin_reports') }}?period={{ period }}&export=csv" class="btn btn-secondary">
+                    <i class="bi bi-filetype-csv me-1"></i> Exportar CSV
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Indicadores Principais -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-ticket"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ total_chamados }}</span>
+                <span class="stat-label">Total Chamados</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-info">
+            <div class="stat-icon"><i class="bi bi-calendar-check"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ total_periodo }}</span>
+                <span class="stat-label">No Período</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-success">
+            <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ "%.0f"|format((sla_cumprido / total_sla * 100) if total_sla > 0 else 0) }}%</span>
+                <span class="stat-label">SLA Cumprido</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+            <div class="stat-icon"><i class="bi bi-star"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ avaliacoes }}</span>
+                <span class="stat-label">Satisfação Média</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-clock me-2"></i>Tempo Médio de Atendimento</h6>
+            </div>
+            <div class="card-body text-center py-4">
+                <div class="display-4 fw-bold text-primary">{{ "%.0f"|format(tempo_medio) }}</div>
+                <p class="text-muted">minutos por chamado</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>SLA</h6>
+            </div>
+            <div class="card-body text-center py-4">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="display-5 fw-bold text-success">{{ sla_cumprido }}</div>
+                        <p class="text-muted">Cumprido</p>
+                    </div>
+                    <div class="col-6">
+                        <div class="display-5 fw-bold text-danger">{{ sla_vencido }}</div>
+                        <p class="text-muted">Vencido</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
