@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }}{% endblock %}
+{% block page_title %}{{ article.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="badge bg-primary">{{ article.category }}</span>
+                    <small class="text-muted">
+                        <i class="bi bi-eye me-1"></i> {{ article.views }} visualizações
+                    </small>
+                    <small class="text-muted">
+                        Atualizado em {{ article.updated_at.strftime('%d/%m/%Y') if article.updated_at else article.created_at.strftime('%d/%m/%Y') }}
+                    </small>
+                </div>
+                <div class="content-html">
+                    {{ article.content|safe }}
+                </div>
+
+                {% if article.file_path %}
+                <div class="mt-4">
+                    <a href="{{ url_for('download_file', filename=article.file_path) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-download me-2"></i> Baixar anexo
+                    </a>
+                </div>
+                {% endif %}
+
+                <hr>
+                <a href="{{ url_for('knowledge_base') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i> Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
