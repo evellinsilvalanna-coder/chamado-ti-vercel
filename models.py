@@ -101,6 +101,7 @@ class Chamado(db.Model):
         'aguardando_usuario': '#e67e22',
         'aguardando_fornecedor': '#9b59b6',
         'aguardando_peca': '#e74c3c',
+        'pendente': '#6f42c1',
         'resolvido': '#1abc9c',
         'finalizado': '#7f8c8d',
         'cancelado': '#95a5a6'
@@ -113,6 +114,7 @@ class Chamado(db.Model):
         'aguardando_usuario': 'Aguardando usuário',
         'aguardando_fornecedor': 'Aguardando fornecedor',
         'aguardando_peca': 'Aguardando peça',
+        'pendente': 'Pendente',
         'resolvido': 'Resolvido',
         'finalizado': 'Finalizado',
         'cancelado': 'Cancelado'
