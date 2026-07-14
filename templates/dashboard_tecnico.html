@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Técnico{% endblock %}
+{% block page_title %}Painel de Atendimento{% endblock %}
+{% block page_subtitle %}Gerencie os chamados da fila{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-ticket-perforated"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.novos }}</span>
+                <span class="stat-label">Novos</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-warning">
+            <div class="stat-icon"><i class="bi bi-gear-wide-connected"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.atendimento }}</span>
+                <span class="stat-label">Em Atendimento</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-info">
+            <div class="stat-icon"><i class="bi bi-clock"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.pendentes }}</span>
+                <span class="stat-label">Pendentes</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-success">
+            <div class="stat-icon"><i class="bi bi-check2-all"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.resolvidos_hoje }}</span>
+                <span class="stat-label">Resolvidos Hoje</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Chamados por Categoria</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="chartCategoria" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Chamados por Prioridade</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="chartPrioridade" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-building me-2"></i>Chamados por Departamento</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="chartDepartamento" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-calendar me-2"></i>Chamados por Mês</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="chartMes" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fila de Chamados -->
+<div class="card shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-list-ul me-2"></i>Fila de Chamados</h6>
+        <a href="{{ url_for('list_chamados') }}" class="btn btn-sm btn-outline-primary">Ver Todos</a>
+    </div>
+    <div class="card-body p-0">
+        {% set fila = chamados_por_categoria %} {# placeholder - real query in app #}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+            <p>Use a página de chamados para gerenciar a fila</p>
+            <a href="{{ url_for('list_chamados') }}" class="btn btn-primary">Acessar Chamados</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const chartColors = ['#4e73df', '#1cc88a', '#f6c23e', '#e74a3b', '#858796', '#36b9cc', '#5a5c69'];
+
+new Chart(document.getElementById('chartCategoria'), {
+    type: 'doughnut',
+    data: {
+        labels: [{% for c in chamados_por_categoria %}'{{ c[0] }}',{% endfor %}],
+        datasets: [{
+            data: [{% for c in chamados_por_categoria %}{{ c[1] }},{% endfor %}],
+            backgroundColor: chartColors
+        }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+});
+
+new Chart(document.getElementById('chartPrioridade'), {
+    type: 'bar',
+    data: {
+        labels: [{% for p in chamados_por_prioridade %}'{{ p[0]|capitalize }}',{% endfor %}],
+        datasets: [{
+            label: 'Chamados',
+            data: [{% for p in chamados_por_prioridade %}{{ p[1] }},{% endfor %}],
+            backgroundColor: ['#1cc88a', '#f6c23e', '#e74a3b', '#e74a3b']
+        }]
+    },
+    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+});
+
+new Chart(document.getElementById('chartDepartamento'), {
+    type: 'bar',
+    data: {
+        labels: [{% for d in chamados_por_departamento %}'{{ d[0] }}',{% endfor %}],
+        datasets: [{
+            label: 'Chamados',
+            data: [{% for d in chamados_por_departamento %}{{ d[1] }},{% endfor %}],
+            backgroundColor: '#36b9cc'
+        }]
+    },
+    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+});
+
+new Chart(document.getElementById('chartMes'), {
+    type: 'line',
+    data: {
+        labels: [{% for m in chamados_por_mes %}'{{ m[0] }}',{% endfor %}],
+        datasets: [{
+            label: 'Chamados',
+            data: [{% for m in chamados_por_mes %}{{ m[1] }},{% endfor %}],
+            borderColor: '#4e73df',
+            backgroundColor: 'rgba(78,115,223,0.1)',
+            fill: true,
+            tension: 0.3
+        }]
+    },
+    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+});
+</script>
+{% endblock %}
