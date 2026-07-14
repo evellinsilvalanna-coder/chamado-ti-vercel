@@ -129,25 +129,34 @@ function confirmExecution() {
         if (width >= 100) clearInterval(interval);
     }, 200);
     
-    fetch('/api/solutions/' + currentSolutionId + '/execute', {
+    fetch('/api/autoatendimento/execute/' + currentSolutionId, {
         method: 'POST',
-        headers: {'X-CSRFToken': '{{ csrf_token() if csrf_token else "" }}{% if not csrf_token %}{% endif %}'}
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() if csrf_token else "" }}',
+            'Content-Type': 'application/json'
+        }
     })
-    .then(r => r.json())
+    .then(r => {
+        if (!r.ok) {
+            return r.text().then(text => {
+                throw new Error(text || 'Erro no servidor (' + r.status + ')');
+            });
+        }
+        return r.json();
+    })
     .then(data => {
         progress.classList.add('d-none');
         result.classList.remove('d-none');
         if (data.success) {
-            result.innerHTML = '<i class="bi bi-check-circle-fill text-success fs-1 d-block mb-2"></i><h5 class="text-success">' + data.message + '</h5>';
+            result.innerHTML = '<i class="bi bi-check-circle-fill text-success fs-1 d-block mb-2"></i><h5 class="text-success">Solução executada!</h5><p>' + data.solution.name + '</p>';
         } else {
-            result.innerHTML = '<i class="bi bi-x-circle-fill text-danger fs-1 d-block mb-2"></i><h5 class="text-danger">' + data.message + '</h5>';
+            result.innerHTML = '<i class="bi bi-x-circle-fill text-danger fs-1 d-block mb-2"></i><h5 class="text-danger">' + (data.error || 'Erro desconhecido') + '</h5>';
         }
-        setTimeout(() => location.reload(), 3000);
     })
     .catch(err => {
         progress.classList.add('d-none');
         result.classList.remove('d-none');
-        result.innerHTML = '<i class="bi bi-x-circle-fill text-danger fs-1 d-block mb-2"></i><h5 class="text-danger">Erro ao executar: ' + err.message + '</h5>';
+        result.innerHTML = '<i class="bi bi-x-circle-fill text-danger fs-1 d-block mb-2"></i><h6 class="text-danger">Erro ao executar: ' + err.message + '</h6>';
     });
 }
 
