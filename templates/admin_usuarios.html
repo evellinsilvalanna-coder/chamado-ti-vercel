@@ -57,13 +57,15 @@
                         <td><small class="text-muted">{{ u.created_at.strftime('%d/%m/%Y') if u.created_at else '-' }}</small></td>
                         <td>
                             <div class="btn-group btn-group-sm">
-                                <a href="#" class="btn btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
+                                <button class="btn btn-outline-primary" title="Editar" data-bs-toggle="modal" data-bs-target="#editUserModal{{ u.id }}"><i class="bi bi-pencil"></i></button>
                                 {% if u.is_active %}
                                 <a href="{{ url_for('block_user', id=u.id) }}" class="btn btn-outline-warning" title="Bloquear" onclick="return confirm('Bloquear {{ u.name }}?')"><i class="bi bi-lock"></i></a>
                                 {% else %}
                                 <a href="{{ url_for('unblock_user', id=u.id) }}" class="btn btn-outline-success" title="Desbloquear" onclick="return confirm('Desbloquear {{ u.name }}?')"><i class="bi bi-unlock"></i></a>
                                 {% endif %}
-                                <a href="{{ url_for('admin_delete_user', id=u.id) }}" class="btn btn-outline-danger" title="Excluir" onclick="return confirm('Excluir {{ u.name }} permanentemente?')"><i class="bi bi-trash"></i></a>
+                                <form method="POST" action="{{ url_for('admin_delete_user', id=u.id) }}" style="display:inline" onsubmit="return confirm('Excluir {{ u.name }} permanentemente?')">
+                                    <button type="submit" class="btn btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></button>
+                                </form>
                             </div>
                         </td>
                     </tr>
@@ -80,6 +82,53 @@
         </div>
     </div>
 </div>
+
+{% for u in users %}
+<!-- Modal Editar {{ u.name }} -->
+<div class="modal fade" id="editUserModal{{ u.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin_edit_user', id=u.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Usuário</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nome *</label>
+                        <input type="text" class="form-control" name="name" value="{{ u.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">E-mail *</label>
+                        <input type="email" class="form-control" name="email" value="{{ u.email }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Perfil</label>
+                        <select class="form-select" name="profile">
+                            <option value="solicitante" {% if u.profile == 'solicitante' %}selected{% endif %}>Solicitante</option>
+                            <option value="tecnico" {% if u.profile == 'tecnico' %}selected{% endif %}>Técnico</option>
+                            <option value="admin" {% if u.profile == 'admin' %}selected{% endif %}>Administrador</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Departamento</label>
+                        <select class="form-select" name="department_id">
+                            <option value="">-- Selecione --</option>
+                            {% for d in departments %}
+                            <option value="{{ d.id }}" {% if u.department_id == d.id %}selected{% endif %}>{{ d.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
 
 <!-- Modal Add User -->
 <div class="modal fade" id="addUserModal" tabindex="-1">
