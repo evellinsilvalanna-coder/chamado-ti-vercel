@@ -134,6 +134,7 @@ class Message(db.Model):
     created_at = db.Column(db.DateTime, default=get_sao_paulo_time)
 
     user = db.relationship('User', backref='messages')
+    attachments = db.relationship('Attachment', backref='message_obj', lazy='dynamic')
 
 class Attachment(db.Model):
     __tablename__ = 'attachments'
