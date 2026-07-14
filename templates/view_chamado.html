@@ -10,21 +10,21 @@
         <div class="card shadow-sm mb-3">
             <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
-                    <h5 class="mb-0">{{ chamado.title }}</h5>
+                    <h5 class="mb-0">{{ chamado.titulo }}</h5>
                     <small class="text-muted">Aberto em {{ chamado.created_at.strftime('%d/%m/%Y às %H:%M') }}</small>
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
                     {% set status_colors = {'novo': 'primary', 'em_analise': 'info', 'em_atendimento': 'warning', 'aguardando_usuario': 'secondary', 'aguardando_fornecedor': 'secondary', 'aguardando_peca': 'secondary', 'resolvido': 'success', 'finalizado': 'success', 'cancelado': 'danger'} %}
                     <span class="badge bg-{{ status_colors.get(chamado.status, 'secondary') }} fs-6 px-3 py-2">{{ chamado.get_status_display() }}</span>
                     {% set prioridades = {'baixa': 'success', 'media': 'warning', 'alta': 'danger', 'critica': 'dark'} %}
-                    <span class="badge bg-{{ prioridades.get(chamado.priority, 'secondary') }} fs-6 px-3 py-2">{{ chamado.priority|capitalize if chamado.priority else 'N/A' }}</span>
+                    <span class="badge bg-{{ prioridades.get(chamado.prioridade, 'secondary') }} fs-6 px-3 py-2">{{ chamado.prioridade|capitalize if chamado.prioridade else 'N/A' }}</span>
                 </div>
             </div>
             <div class="card-body">
                 <div class="row g-3 mb-3">
                     <div class="col-md-4">
                         <small class="text-muted d-block">Solicitante</small>
-                        <strong>{{ chamado.solicitante.name }}</strong>
+                        <strong>{{ chamado.solicitante.name if chamado.solicitante else '-' }}</strong>
                     </div>
                     <div class="col-md-4">
                         <small class="text-muted d-block">Técnico Responsável</small>
@@ -40,24 +40,24 @@
                     </div>
                     <div class="col-md-4">
                         <small class="text-muted d-block">Localização</small>
-                        <strong>{{ chamado.location or '-' }}</strong>
+                        <strong>{{ chamado.localizacao or '-' }}</strong>
                     </div>
                     <div class="col-md-4">
                         <small class="text-muted d-block">Equipamento / Patrimônio</small>
-                        <strong>{{ chamado.equipment or '-' }}{% if chamado.patrimony %} / {{ chamado.patrimony }}{% endif %}</strong>
+                        <strong>{{ chamado.equipamento or '-' }}{% if chamado.patrimonio %} / {{ chamado.patrimonio }}{% endif %}</strong>
                     </div>
                 </div>
                 
                 <hr>
                 <h6>Descrição</h6>
-                <p class="text-muted" style="white-space: pre-wrap;">{{ chamado.description }}</p>
+                <p class="text-muted" style="white-space: pre-wrap;">{{ chamado.descricao }}</p>
                 
-                {% if chamado.attachments_rel %}
+                {% if chamado.attachments %}
                 <hr>
                 <h6>Anexos</h6>
                 <div class="d-flex gap-2 flex-wrap">
-                    {% for att in chamado.attachments_rel %}
-                    <a href="{{ url_for('uploaded_file', filename=att.filename) }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                    {% for att in chamado.attachments %}
+                    <a href="{{ url_for('download_attachment', id=att.id) }}" class="btn btn-sm btn-outline-secondary" target="_blank">
                         <i class="bi bi-paperclip"></i> {{ att.original_name }}
                     </a>
                     {% endfor %}
@@ -78,11 +78,11 @@
                         <strong>{{ msg.user.name }}</strong>
                         <small class="text-muted">{{ msg.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
                     </div>
-                    <div class="message-body">{{ msg.content }}</div>
+                    <div class="message-body">{{ msg.message }}</div>
                     {% if msg.attachments %}
                     <div class="message-attachments mt-1">
                         {% for att in msg.attachments %}
-                        <a href="{{ url_for('uploaded_file', filename=att.filename) }}" class="btn btn-sm btn-link p-0 me-2" target="_blank">
+                        <a href="{{ url_for('download_attachment', id=att.id) }}" class="btn btn-sm btn-link p-0 me-2" target="_blank">
                             <i class="bi bi-paperclip"></i> {{ att.original_name }}
                         </a>
                         {% endfor %}
@@ -99,12 +99,8 @@
             
             {% if chamado.status not in ['finalizado', 'cancelado'] %}
             <div class="card-footer bg-white">
-                <form method="POST" action="{{ url_for('send_message', id=chamado.id) }}" enctype="multipart/form-data" class="d-flex gap-2">
-                    <input type="text" class="form-control" name="content" placeholder="Digite sua mensagem..." required>
-                    <input type="file" class="form-control d-none" name="attachment" id="msgFile">
-                    <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('msgFile').click()">
-                        <i class="bi bi-paperclip"></i>
-                    </button>
+                <form method="POST" action="{{ url_for('send_message', id=chamado.id) }}" class="d-flex gap-2">
+                    <input type="text" class="form-control" name="message" placeholder="Digite sua mensagem..." required>
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-send"></i>
                     </button>
@@ -142,9 +138,9 @@
                 
                 <form method="POST" action="{{ url_for('update_priority', id=chamado.id) }}" class="mb-2">
                     <div class="input-group">
-                        <select class="form-select" name="priority">
+                        <select class="form-select" name="prioridade">
                             {% for p in ['baixa', 'media', 'alta', 'critica'] %}
-                            <option value="{{ p }}" {% if p == chamado.priority %}selected{% endif %}>{{ p|capitalize }}</option>
+                            <option value="{{ p }}" {% if p == chamado.prioridade %}selected{% endif %}>{{ p|capitalize }}</option>
                             {% endfor %}
                         </select>
                         <button class="btn btn-outline-warning" type="submit"><i class="bi bi-arrow-right"></i></button>
@@ -170,12 +166,12 @@
         <div class="card shadow-sm mb-3">
             <div class="card-header bg-white"><h6 class="mb-0"><i class="bi bi-star me-2"></i>Avaliar Atendimento</h6></div>
             <div class="card-body text-center">
-                {% if chamado.avaliacao %}
+                {% if chamado.avaliacao_nota %}
                 <p>Sua avaliação: 
-                    {% for i in range(chamado.avaliacao.nota) %}⭐{% endfor %}
+                    {% for i in range(chamado.avaliacao_nota) %}⭐{% endfor %}
                 </p>
-                {% if chamado.avaliacao.comentario %}
-                <p class="text-muted">{{ chamado.avaliacao.comentario }}</p>
+                {% if chamado.avaliacao_comentario %}
+                <p class="text-muted">{{ chamado.avaliacao_comentario }}</p>
                 {% endif %}
                 {% else %}
                 <form method="POST" action="{{ url_for('avaliar_chamado', id=chamado.id) }}">
@@ -210,19 +206,19 @@
             <div class="card-header bg-white"><h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>SLA</h6></div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
-                    <span>1º Atendimento:</span>
+                    <span>Criado em:</span>
                     <strong>{{ chamado.created_at.strftime('%d/%m %H:%M') if chamado.created_at else '-' }}</strong>
                 </div>
-                {% if chamado.sla %}
+                {% if sla_status %}
                 <div class="progress mb-2" style="height: 8px;">
-                    <div class="progress-bar {{ 'bg-danger' if chamado.sla_excedido else 'bg-success' }}" 
-                         style="width: {{ chamado.sla_percent }}%"></div>
+                    <div class="progress-bar {{ 'bg-danger' if sla_status.excedido else 'bg-success' }}" 
+                         style="width: {{ sla_status.percent }}%"></div>
                 </div>
                 <small class="text-muted d-block text-center">
-                    {% if chamado.sla_excedido %}
+                    {% if sla_status.excedido %}
                     <span class="text-danger"><i class="bi bi-exclamation-triangle"></i> SLA Excedido</span>
                     {% else %}
-                    {{ chamado.sla_restante }} restantes
+                    {{ sla_status.restante }} restantes
                     {% endif %}
                 </small>
                 {% endif %}
@@ -239,7 +235,7 @@
                     <div class="history-content">
                         <small class="text-muted">{{ h.created_at.strftime('%d/%m %H:%M') }}</small>
                         <p class="mb-0">{{ h.action }}</p>
-                        {% if h.details %}<small class="text-muted">{{ h.details }}</small>{% endif %}
+                        {% if h.detalhes %}<small class="text-muted">{{ h.detalhes }}</small>{% endif %}
                     </div>
                 </div>
                 {% else %}
@@ -256,7 +252,6 @@
 
 {% block extra_js %}
 <script>
-// Auto-scroll para última mensagem
 const container = document.getElementById('messagesContainer');
 if (container) container.scrollTop = container.scrollHeight;
 </script>
