@@ -63,7 +63,7 @@
                                 {% else %}
                                 <a href="{{ url_for('unblock_user', id=u.id) }}" class="btn btn-outline-success" title="Desbloquear" onclick="return confirm('Desbloquear {{ u.name }}?')"><i class="bi bi-unlock"></i></a>
                                 {% endif %}
-                                <a href="{{ url_for('delete_user', id=u.id) }}" class="btn btn-outline-danger" title="Excluir" onclick="return confirm('Excluir {{ u.name }} permanentemente?')"><i class="bi bi-trash"></i></a>
+                                <a href="{{ url_for('admin_delete_user', id=u.id) }}" class="btn btn-outline-danger" title="Excluir" onclick="return confirm('Excluir {{ u.name }} permanentemente?')"><i class="bi bi-trash"></i></a>
                             </div>
                         </td>
                     </tr>
