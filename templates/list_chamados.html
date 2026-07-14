@@ -59,11 +59,11 @@
                     {% for c in chamados.items %}
                     <tr>
                         <td><span class="protocolo-badge">{{ c.protocolo }}</span></td>
-                        <td class="text-truncate" style="max-width: 180px;">{{ c.title }}</td>
+                        <td class="text-truncate" style="max-width: 180px;">{{ c.titulo }}</td>
                         {% if current_user.profile != 'solicitante' %}<td><small>{{ c.solicitante.name }}</small></td>{% endif %}
                         <td><span class="badge bg-light text-dark">{{ c.category.name if c.category else '-' }}</span></td>
                         <td>{% set pcolors = {'baixa': 'success', 'media': 'warning', 'alta': 'danger', 'critica': 'dark'} %}
-                            <span class="badge bg-{{ pcolors.get(c.priority, 'secondary') }}">{{ c.priority|capitalize if c.priority else 'N/A' }}</span>
+                            <span class="badge bg-{{ pcolors.get(c.prioridade, 'secondary') }}">{{ c.prioridade|capitalize if c.prioridade else 'N/A' }}</span>
                         </td>
                         <td>{% set scolors = {'novo': 'primary', 'em_analise': 'info', 'em_atendimento': 'warning', 'aguardando_usuario': 'secondary', 'aguardando_fornecedor': 'secondary', 'aguardando_peca': 'secondary', 'resolvido': 'success', 'finalizado': 'success', 'cancelado': 'danger'} %}
                             <span class="badge bg-{{ scolors.get(c.status, 'secondary') }}">{{ c.get_status_display() }}</span>
