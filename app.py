@@ -507,13 +507,91 @@ def view_chamado(id):
     if current_user.profile == 'solicitante' and chamado.user_id != current_user.id:
         abort(403)
     
+    messages = Message.query.filter_by(chamado_id=id).order_by(Message.created_at.asc()).all()
+    historico = History.query.filter_by(chamado_id=id).order_by(History.created_at.asc()).all()
+    tecnicos = User.query.filter(User.profile.in_(['tecnico', 'admin']), User.is_active == True).all()
+    
     sla_status = get_sla_status(chamado)
     
     # Marcar notificações como lidas
     Notification.query.filter_by(user_id=current_user.id, chamado_id=id, is_read=False).update({'is_read': True})
     db.session.commit()
     
-    return render_template('view_chamado.html', chamado=chamado, sla_status=sla_status)
+    return render_template('view_chamado.html', chamado=chamado, messages=messages,
+                          historico=historico, tecnicos=tecnicos, sla_status=sla_status)
+
+@app.route('/chamados/<int:id>/assumir', methods=['POST'])
+@login_required
+@has_role('tecnico', 'admin')
+def assumir_chamado(id):
+    chamado = Chamado.query.get_or_404(id)
+    chamado.tecnico_id = current_user.id
+    chamado.status = 'em_atendimento'
+    chamado.first_response_at = now_sp()
+    db.session.commit()
+    add_history(id, current_user.id, 'Chamado assumido', detalhes=f'Técnico: {current_user.name}')
+    create_notification(chamado.user_id, 'Chamado em atendimento',
+                       f'Seu chamado {chamado.protocolo} foi assumido por {current_user.name}', id, 'info')
+    flash('Chamado assumido com sucesso!', 'success')
+    return redirect(url_for('view_chamado', id=id))
+
+@app.route('/chamados/<int:id>/prioridade', methods=['POST'])
+@login_required
+@has_role('tecnico', 'admin')
+def update_priority(id):
+    chamado = Chamado.query.get_or_404(id)
+    prioridade = request.form.get('prioridade', 'media')
+    prioridade_anterior = chamado.prioridade
+    chamado.prioridade = prioridade
+    db.session.commit()
+    add_history(id, current_user.id, 'Prioridade alterada', detalhes=f'De {prioridade_anterior} para {prioridade}')
+    flash('Prioridade atualizada!', 'success')
+    return redirect(url_for('view_chamado', id=id))
+
+@app.route('/chamados/<int:id>/transferir', methods=['POST'])
+@login_required
+@has_role('tecnico', 'admin')
+def transferir_chamado(id):
+    chamado = Chamado.query.get_or_404(id)
+    tecnico_id = request.form.get('tecnico_id', type=int)
+    if tecnico_id:
+        novo_tecnico = User.query.get(tecnico_id)
+        tecnico_anterior = chamado.tecnico.name if chamado.tecnico else 'Nenhum'
+        chamado.tecnico_id = tecnico_id
+        db.session.commit()
+        add_history(id, current_user.id, 'Chamado transferido',
+                   detalhes=f'De {tecnico_anterior} para {novo_tecnico.name}')
+        flash(f'Chamado transferido para {novo_tecnico.name}!', 'success')
+    return redirect(url_for('view_chamado', id=id))
+
+@app.route('/chamados/<int:id>/avaliar', methods=['POST'])
+@login_required
+@has_role('solicitante')
+def avaliar_chamado(id):
+    chamado = Chamado.query.get_or_404(id)
+    if chamado.user_id != current_user.id:
+        abort(403)
+    nota = request.form.get('nota', type=int, default=5)
+    comentario = request.form.get('comentario', '')
+    chamado.avaliacao_nota = nota
+    chamado.avaliacao_comentario = comentario
+    db.session.commit()
+    add_history(id, current_user.id, 'Avaliação registrada', detalhes=f'Nota: {nota}/5')
+    flash('Avaliação registrada! Obrigado pelo feedback.', 'success')
+    return redirect(url_for('view_chamado', id=id))
+
+@app.route('/chamados/<int:id>/reabrir', methods=['POST'])
+@login_required
+@has_role('solicitante')
+def reabrir_chamado(id):
+    chamado = Chamado.query.get_or_404(id)
+    if chamado.user_id != current_user.id:
+        abort(403)
+    chamado.status = 'em_atendimento'
+    db.session.commit()
+    add_history(id, current_user.id, 'Chamado reaberto pelo solicitante')
+    flash('Chamado reaberto com sucesso!', 'success')
+    return redirect(url_for('view_chamado', id=id))
 
 @app.route('/api/chamados/<int:id>/messages', methods=['GET'])
 @login_required
@@ -585,11 +663,19 @@ def send_message(id):
 @has_role('tecnico', 'admin')
 def update_status(id):
     chamado = Chamado.query.get_or_404(id)
-    data = request.get_json()
-    novo_status = data.get('status')
+    is_json = request.is_json
     
-    if novo_status not in Chamado.STATUS_DISPLAY:
-        return jsonify({'error': 'Status inválido'}), 400
+    if is_json:
+        data = request.get_json()
+        novo_status = data.get('status')
+    else:
+        novo_status = request.form.get('status')
+    
+    if not novo_status or novo_status not in Chamado.STATUS_DISPLAY:
+        if is_json:
+            return jsonify({'error': 'Status inválido'}), 400
+        flash('Status inválido.', 'danger')
+        return redirect(url_for('view_chamado', id=id))
     
     status_anterior = chamado.status
     chamado.status = novo_status
@@ -612,12 +698,16 @@ def update_status(id):
                        f'Chamado {chamado.protocolo} alterado para {Chamado.STATUS_DISPLAY[novo_status]}',
                        id, 'info')
     
-    return jsonify({'success': True, 'status': novo_status, 'status_display': Chamado.STATUS_DISPLAY[novo_status]})
+    if is_json:
+        return jsonify({'success': True, 'status': novo_status, 'status_display': Chamado.STATUS_DISPLAY[novo_status]})
+    
+    flash(f'Status alterado para {Chamado.STATUS_DISPLAY[novo_status]}!', 'success')
+    return redirect(url_for('view_chamado', id=id))
 
 @app.route('/api/chamados/<int:id>/assume', methods=['POST'])
 @login_required
 @has_role('tecnico', 'admin')
-def assume_chamado(id):
+def assumir_chamado(id):
     chamado = Chamado.query.get_or_404(id)
     
     if chamado.tecnico_id and chamado.tecnico_id != current_user.id:
@@ -815,7 +905,7 @@ def upload_attachment(id):
         'url': url_for('download_attachment', id=attachment.id)
     }})
 
-@app.route('/uploads/<filename>')
+@app.route('/uploads/<path:filename>')
 @login_required
 def download_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
@@ -1020,6 +1110,31 @@ def admin_delete_user(id):
     user.is_active = False
     db.session.commit()
     flash(f'Usuário {user.name} desativado com sucesso!', 'success')
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/usuarios/<int:id>/block', methods=['GET'])
+@login_required
+@has_role('admin')
+def block_user(id):
+    user = User.query.get_or_404(id)
+    if user.id == current_user.id:
+        flash('Você não pode bloquear seu próprio usuário.', 'danger')
+    else:
+        user.is_active = False
+        db.session.commit()
+        log_system(current_user.id, 'usuario_bloqueado', f'Usuário {user.email} bloqueado')
+        flash(f'Usuário {user.name} bloqueado!', 'success')
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/usuarios/<int:id>/unblock', methods=['GET'])
+@login_required
+@has_role('admin')
+def unblock_user(id):
+    user = User.query.get_or_404(id)
+    user.is_active = True
+    db.session.commit()
+    log_system(current_user.id, 'usuario_desbloqueado', f'Usuário {user.email} desbloqueado')
+    flash(f'Usuário {user.name} desbloqueado!', 'success')
     return redirect(url_for('admin_users'))
 
 @app.route('/admin/departamentos')
@@ -1243,7 +1358,7 @@ def admin_delete_solution(id):
 @login_required
 def knowledge_base():
     articles = KnowledgeBase.query.filter_by(is_published=True).order_by(KnowledgeBase.views.desc()).all()
-    return render_template('knowledge_base.html', articles=articles)
+    return render_template('knowledge_base.html', artigos=articles)
 
 @app.route('/knowledge-base/<int:id>')
 @login_required
@@ -1320,6 +1435,43 @@ def delete_article(id):
     flash('Artigo excluído!', 'success')
     return redirect(url_for('admin_knowledge_base'))
 
+@app.route('/admin/knowledge/<int:id>/toggle', methods=['GET', 'POST'])
+@login_required
+@has_role('admin')
+def toggle_article(id):
+    article = KnowledgeBase.query.get_or_404(id)
+    article.is_published = not article.is_published
+    db.session.commit()
+    flash(f'Artigo {"publicado" if article.is_published else "despublicado"}!', 'success')
+    return redirect(url_for('admin_knowledge_base'))
+
+@app.route('/knowledge-base/add', methods=['POST'])
+@login_required
+@has_role('admin')
+def add_knowledge():
+    title = request.form.get('title', '').strip()
+    content = request.form.get('content', '').strip()
+    category = request.form.get('category', '')
+    tags = request.form.get('tags', '')
+    
+    if not title or not content:
+        flash('Título e conteúdo são obrigatórios.', 'danger')
+        return redirect(url_for('knowledge_base'))
+    
+    article = KnowledgeBase(
+        title=title,
+        content=content,
+        category=category,
+        tags=tags,
+        author_id=current_user.id,
+        is_published=True,
+        created_at=now_sp()
+    )
+    db.session.add(article)
+    db.session.commit()
+    flash('Artigo publicado na base de conhecimento!', 'success')
+    return redirect(url_for('knowledge_base'))
+
 # ─── Upload solução ────────────────────────────────────────────────
 
 @app.route('/upload/solution/<int:id>', methods=['POST'])
@@ -1339,6 +1491,17 @@ def upload_solution_file(id):
         db.session.commit()
         flash('Arquivo enviado com sucesso!', 'success')
     return redirect(url_for('admin_solutions'))
+
+@app.route('/solutions/<int:id>/download')
+@login_required
+@has_role('admin')
+def download_solution_file(id):
+    solution = QuickSolution.query.get_or_404(id)
+    if not solution.file_path:
+        flash('Nenhum arquivo vinculado a esta solução.', 'danger')
+        return redirect(url_for('admin_solutions'))
+    return send_from_directory(app.config['SOLUTIONS_FOLDER'], solution.file_path, 
+                              as_attachment=True)
 
 # ─── Relatórios ────────────────────────────────────────────────────
 
