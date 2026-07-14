@@ -218,12 +218,48 @@ def forgot_password():
         email = request.form.get('email', '').strip().lower()
         user = User.query.filter_by(email=email).first()
         if user:
-            # Em produção: enviar e-mail com link de redefinição
-            flash('Se o e-mail existir em nosso sistema, você receberá instruções para redefinir sua senha.', 'info')
+            # Gera token de reset
+            token = str(uuid.uuid4())
+            user.reset_token = token
+            user.reset_token_expiry = now_sp() + timedelta(hours=1)
+            db.session.commit()
+            
+            # Mostra o link de reset direto na tela (sem e-mail)
+            reset_url = url_for('reset_password', token=token, _external=True)
+            flash(f'Link de redefinição gerado! Acesse: {reset_url}', 'success')
         else:
             flash('Se o e-mail existir em nosso sistema, você receberá instruções para redefinir sua senha.', 'info')
         return redirect(url_for('login'))
     return render_template('forgot_password.html')
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    user = User.query.filter_by(reset_token=token).first()
+    if not user or not user.reset_token_expiry or now_sp() > user.reset_token_expiry:
+        flash('Link inválido ou expirado. Solicite uma nova recuperação de senha.', 'danger')
+        return redirect(url_for('forgot_password'))
+    
+    if request.method == 'POST':
+        new_password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        
+        if not new_password or len(new_password) < 4:
+            flash('A senha deve ter pelo menos 4 caracteres.', 'danger')
+            return render_template('reset_password.html', token=token)
+        
+        if new_password != confirm_password:
+            flash('As senhas não coincidem.', 'danger')
+            return render_template('reset_password.html', token=token)
+        
+        user.password_hash = generate_password_hash(new_password)
+        user.reset_token = None
+        user.reset_token_expiry = None
+        db.session.commit()
+        
+        flash('Senha redefinida com sucesso! Faça login com sua nova senha.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('reset_password.html', token=token)
 
 @app.route('/change-password', methods=['POST'])
 @login_required
