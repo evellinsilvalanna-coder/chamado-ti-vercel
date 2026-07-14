@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Administração{% endblock %}
+{% block page_title %}Administração{% endblock %}
+{% block page_subtitle %}Gerenciamento completo do sistema{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('admin_users') }}" class="text-decoration-none">
+            <div class="card stat-card stat-blue h-100">
+                <div class="stat-icon"><i class="bi bi-people"></i></div>
+                <div class="stat-info">
+                    <span class="stat-value">{{ stats.total_users }}</span>
+                    <span class="stat-label">Usuários</span>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('list_chamados') }}" class="text-decoration-none">
+            <div class="card stat-card stat-green h-100">
+                <div class="stat-icon"><i class="bi bi-ticket-perforated"></i></div>
+                <div class="stat-info">
+                    <span class="stat-value">{{ stats.total_chamados }}</span>
+                    <span class="stat-label">Total Chamados</span>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('admin_departments') }}" class="text-decoration-none">
+            <div class="card stat-card stat-yellow h-100">
+                <div class="stat-icon"><i class="bi bi-building"></i></div>
+                <div class="stat-info">
+                    <span class="stat-value">{{ stats.total_departments }}</span>
+                    <span class="stat-label">Departamentos</span>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('admin_solutions') }}" class="text-decoration-none">
+            <div class="card stat-card stat-purple h-100">
+                <div class="stat-icon"><i class="bi bi-tools"></i></div>
+                <div class="stat-info">
+                    <span class="stat-value">{{ stats.total_solutions }}</span>
+                    <span class="stat-label">Soluções Rápidas</span>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-people-fill fs-1 text-primary mb-3 d-block"></i>
+                <h5>Gerenciar Usuários</h5>
+                <p class="text-muted small">Cadastre, edite ou bloqueie usuários, técnicos e administradores</p>
+                <a href="{{ url_for('admin_users') }}" class="btn btn-primary w-100">Acessar</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-building-fill fs-1 text-success mb-3 d-block"></i>
+                <h5>Departamentos</h5>
+                <p class="text-muted small">Configure os departamentos e categorias da empresa</p>
+                <a href="{{ url_for('admin_departments') }}" class="btn btn-success w-100">Acessar</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-tools fs-1 text-warning mb-3 d-block"></i>
+                <h5>Soluções Rápidas</h5>
+                <p class="text-muted small">Gerencie o catálogo de autoatendimento e soluções</p>
+                <a href="{{ url_for('admin_solutions') }}" class="btn btn-warning text-white w-100">Acessar</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-clock-history fs-1 text-info mb-3 d-block"></i>
+                <h5>SLA</h5>
+                <p class="text-muted small">Configure prazos e alertas de nível de serviço</p>
+                <a href="{{ url_for('admin_sla') }}" class="btn btn-info text-white w-100">Acessar</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-file-earmark-bar-graph fs-1 text-danger mb-3 d-block"></i>
+                <h5>Relatórios</h5>
+                <p class="text-muted small">Gere relatórios em PDF, Excel e CSV</p>
+                <a href="{{ url_for('relatorios') }}" class="btn btn-danger w-100">Acessar</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-journal-text fs-1 text-secondary mb-3 d-block"></i>
+                <h5>Logs do Sistema</h5>
+                <p class="text-muted small">Visualize todas as ações registradas no sistema</p>
+                <a href="{{ url_for('admin_logs') }}" class="btn btn-secondary w-100">Acessar</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
