@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Cadastro{% endblock %}
+{% block page_title %}Criar Conta{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <div class="avatar-circle mx-auto" style="width: 64px; height: 64px; background: linear-gradient(135deg, #43e97b, #38f9d7); font-size: 28px;">
+                        <i class="bi bi-person-plus"></i>
+                    </div>
+                    <h5 class="mt-3">Criar nova conta</h5>
+                    <p class="text-muted">Preencha os dados para se cadastrar como solicitante</p>
+                </div>
+                
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Nome completo</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input type="text" class="form-control" name="name" required placeholder="Seu nome">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">E-mail</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <input type="email" class="form-control" name="email" required placeholder="seu@email.com">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Senha</label>
+                            <input type="password" class="form-control" name="password" required placeholder="Sua senha">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Confirmar senha</label>
+                            <input type="password" class="form-control" name="confirm_password" required placeholder="Confirme a senha">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Telefone</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                            <input type="text" class="form-control" name="phone" placeholder="(12) 99999-9999" id="phone">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Departamento</label>
+                        <select class="form-select" name="department_id">
+                            <option value="">Selecione...</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}">{{ dept.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle me-2"></i> Cadastrar
+                    </button>
+                </form>
+                
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('login') }}">Já tem conta? Faça login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('phone')?.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.slice(0, 11);
+    if (value.length > 6) {
+        value = `(${value.slice(0,2)}) ${value.slice(2,7)}-${value.slice(7)}`;
+    } else if (value.length > 2) {
+        value = `(${value.slice(0,2)}) ${value.slice(2)}`;
+    } else if (value.length > 0) {
+        value = `(${value}`;
+    }
+    e.target.value = value;
+});
+</script>
+{% endblock %}
