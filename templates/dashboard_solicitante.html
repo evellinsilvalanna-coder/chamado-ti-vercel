@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Meus Chamados{% endblock %}
+{% block page_subtitle %}Acompanhe suas solicitações{% endblock %}
+
+{% block content %}
+<!-- Cards de Status -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-ticket"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.abertos }}</span>
+                <span class="stat-label">Abertos</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-warning">
+            <div class="stat-icon"><i class="bi bi-gear"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.atendimento }}</span>
+                <span class="stat-label">Em Atendimento</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-info">
+            <div class="stat-icon"><i class="bi bi-hourglass"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.aguardando }}</span>
+                <span class="stat-label">Aguardando</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-success">
+            <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.finalizados }}</span>
+                <span class="stat-label">Finalizados</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ações Rápidas -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <a href="{{ url_for('novo_chamado') }}" class="text-decoration-none">
+            <div class="card border-primary border-2 h-100 hover-shadow">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-plus-circle text-primary display-4 d-block mb-3"></i>
+                    <h5 class="card-title">Abrir Chamado</h5>
+                    <p class="text-muted mb-0">Solicite suporte técnico</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6">
+        <a href="{{ url_for('autoatendimento') }}" class="text-decoration-none">
+            <div class="card border-success border-2 h-100 hover-shadow">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-tools text-success display-4 d-block mb-3"></i>
+                    <h5 class="card-title">Resolver Problemas</h5>
+                    <p class="text-muted mb-0">Autoatendimento — soluções rápidas</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Chamados Recentes -->
+<div class="card shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-list-ul me-2"></i>Chamados Recentes</h6>
+        <a href="{{ url_for('list_chamados') }}" class="btn btn-sm btn-outline-primary">Ver Todos</a>
+    </div>
+    <div class="card-body p-0">
+        {% if chamados %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Protocolo</th>
+                        <th>Título</th>
+                        <th>Status</th>
+                        <th>Prioridade</th>
+                        <th>Data</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in chamados %}
+                    <tr>
+                        <td><span class="badge bg-dark">{{ c.protocolo }}</span></td>
+                        <td>{{ c.titulo[:40] }}{% if c.titulo|length > 40 %}...{% endif %}</td>
+                        <td><span class="status-badge status-{{ c.status }}">{{ c.status_display }}</span></td>
+                        <td><span class="priority-badge priority-{{ c.prioridade }}">{{ c.prioridade|capitalize }}</span></td>
+                        <td><small class="text-muted">{{ c.created_at.strftime('%d/%m/%Y %H:%M') }}</small></td>
+                        <td><a href="{{ url_for('view_chamado', id=c.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+            <p class="mb-0">Nenhum chamado encontrado</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
