@@ -17,7 +17,7 @@
     </div>
     
     <div class="col-md-6 col-lg-3">
-        <div class="card knowledge-card h-100" onclick="filterKnowledge('tutorial')">
+        <div class="card knowledge-card h-100" onclick="filterKnowledge('Tutorial')">
             <div class="card-body text-center py-4">
                 <i class="bi bi-book display-5 text-primary"></i>
                 <h5 class="mt-3">Tutoriais</h5>
@@ -26,7 +26,7 @@
         </div>
     </div>
     <div class="col-md-6 col-lg-3">
-        <div class="card knowledge-card h-100" onclick="filterKnowledge('procedimento')">
+        <div class="card knowledge-card h-100" onclick="filterKnowledge('Procedimento')">
             <div class="card-body text-center py-4">
                 <i class="bi bi-journal-check display-5 text-success"></i>
                 <h5 class="mt-3">Procedimentos</h5>
@@ -35,7 +35,7 @@
         </div>
     </div>
     <div class="col-md-6 col-lg-3">
-        <div class="card knowledge-card h-100" onclick="filterKnowledge('faq')">
+        <div class="card knowledge-card h-100" onclick="filterKnowledge('FAQ')">
             <div class="card-body text-center py-4">
                 <i class="bi bi-question-circle display-5 text-warning"></i>
                 <h5 class="mt-3">FAQs</h5>
@@ -44,7 +44,7 @@
         </div>
     </div>
     <div class="col-md-6 col-lg-3">
-        <div class="card knowledge-card h-100" onclick="filterKnowledge('video')">
+        <div class="card knowledge-card h-100" onclick="filterKnowledge('Video')">
             <div class="card-body text-center py-4">
                 <i class="bi bi-play-circle display-5 text-danger"></i>
                 <h5 class="mt-3">Vídeos</h5>
@@ -56,33 +56,31 @@
 
 <div class="row g-3 mt-2" id="knowledgeList">
     {% for artigo in artigos %}
-    <div class="col-md-6 col-lg-4 knowledge-item" data-type="{{ artigo.tipo }}">
+    <div class="col-md-6 col-lg-4 knowledge-item" data-type="{{ artigo.category or 'Geral' }}">
         <div class="card shadow-sm h-100">
             <div class="card-body">
                 <div class="d-flex align-items-start gap-3">
                     <div class="knowledge-icon">
-                        {% if artigo.tipo == 'tutorial' %}
+                        {% set tipo = artigo.category or 'Geral' %}
+                        {% if tipo == 'Tutorial' %}
                         <i class="bi bi-book text-primary fs-4"></i>
-                        {% elif artigo.tipo == 'procedimento' %}
+                        {% elif tipo == 'Procedimento' %}
                         <i class="bi bi-journal-check text-success fs-4"></i>
-                        {% elif artigo.tipo == 'faq' %}
+                        {% elif tipo == 'FAQ' %}
                         <i class="bi bi-question-circle text-warning fs-4"></i>
-                        {% elif artigo.tipo == 'video' %}
+                        {% elif tipo == 'Video' %}
                         <i class="bi bi-play-circle text-danger fs-4"></i>
                         {% else %}
                         <i class="bi bi-file-text text-secondary fs-4"></i>
                         {% endif %}
                     </div>
                     <div>
-                        <h6 class="mb-1">{{ artigo.title }}</h6>
-                        <small class="text-muted">{{ artigo.description[:120] }}{% if artigo.description|length > 120 %}...{% endif %}</small>
+                        <h6 class="mb-1">
+                            <a href="{{ url_for('knowledge_view', id=artigo.id) }}" class="text-decoration-none">{{ artigo.title }}</a>
+                        </h6>
+                        <small class="text-muted">{{ artigo.content[:150] }}{% if artigo.content|length > 150 %}...{% endif %}</small>
                         <div class="mt-2">
-                            <span class="badge bg-light text-dark">{{ artigo.tipo }}</span>
-                            {% if artigo.attachment %}
-                            <a href="{{ url_for('uploaded_file', filename=artigo.attachment) }}" class="btn btn-sm btn-outline-primary ms-2" target="_blank">
-                                <i class="bi bi-paperclip"></i> Anexo
-                            </a>
-                            {% endif %}
+                            <span class="badge bg-light text-dark">{{ artigo.category or 'Geral' }}</span>
                         </div>
                     </div>
                 </div>
