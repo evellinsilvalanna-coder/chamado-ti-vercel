@@ -361,11 +361,23 @@ def dashboard_tecnico():
         db.func.count(Chamado.id)
     ).group_by('mes').order_by(Chamado.created_at.asc()).limit(12).all()
     
+    # Listas de chamados pro painel
+    chamados_novos = Chamado.query.filter_by(status='novo').order_by(Chamado.created_at.desc()).limit(10).all()
+    chamados_andamento = Chamado.query.filter(
+        Chamado.status.in_(['em_analise', 'em_atendimento', 'aguardando_usuario', 'aguardando_fornecedor', 'aguardando_peca'])
+    ).order_by(Chamado.updated_at.desc()).limit(10).all()
+    chamados_concluidos = Chamado.query.filter(
+        Chamado.status.in_(['resolvido', 'finalizado', 'cancelado'])
+    ).order_by(Chamado.updated_at.desc()).limit(10).all()
+    
     return render_template('dashboard_tecnico.html', stats=stats,
                           chamados_por_categoria=chamados_por_categoria,
                           chamados_por_prioridade=chamados_por_prioridade,
                           chamados_por_departamento=chamados_por_departamento,
-                          chamados_por_mes=chamados_por_mes)
+                          chamados_por_mes=chamados_por_mes,
+                          chamados_novos=chamados_novos,
+                          chamados_andamento=chamados_andamento,
+                          chamados_concluidos=chamados_concluidos)
 
 @app.route('/dashboard/admin')
 @login_required
@@ -931,7 +943,7 @@ def download_attachment(id):
 
 @app.route('/autoatendimento')
 @login_required
-@has_role('solicitante')
+@has_role('solicitante', 'tecnico', 'admin')
 def autoatendimento():
     solutions = QuickSolution.query.filter_by(is_active=True).all()
     categories = [s.category for s in solutions if s.category]
