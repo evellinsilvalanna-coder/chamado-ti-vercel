@@ -95,7 +95,7 @@
                     <tr>
                         <td><span class="badge bg-dark">{{ c.protocolo }}</span></td>
                         <td>{{ c.titulo[:40] }}{% if c.titulo|length > 40 %}...{% endif %}</td>
-                        <td><span class="status-badge status-{{ c.status }}">{{ c.status_display }}</span></td>
+                        <td><span class="status-badge status-{{ c.status }}">{{ c.get_status_display() }}</span></td>
                         <td><span class="priority-badge priority-{{ c.prioridade }}">{{ c.prioridade|capitalize }}</span></td>
                         <td><small class="text-muted">{{ c.created_at.strftime('%d/%m/%Y %H:%M') }}</small></td>
                         <td><a href="{{ url_for('view_chamado', id=c.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
