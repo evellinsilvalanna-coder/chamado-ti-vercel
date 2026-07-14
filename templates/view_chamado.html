@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}Chamado {{ chamado.protocolo }}{% endblock %}
+{% block page_title %}Chamado {{ chamado.protocolo }}{% endblock %}
+{% block page_subtitle %}Detalhes e acompanhamento{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+    <!-- Info do Chamado -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h5 class="mb-0">{{ chamado.title }}</h5>
+                    <small class="text-muted">Aberto em {{ chamado.created_at.strftime('%d/%m/%Y às %H:%M') }}</small>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    {% set status_colors = {'novo': 'primary', 'em_analise': 'info', 'em_atendimento': 'warning', 'aguardando_usuario': 'secondary', 'aguardando_fornecedor': 'secondary', 'aguardando_peca': 'secondary', 'resolvido': 'success', 'finalizado': 'success', 'cancelado': 'danger'} %}
+                    <span class="badge bg-{{ status_colors.get(chamado.status, 'secondary') }} fs-6 px-3 py-2">{{ chamado.get_status_display() }}</span>
+                    {% set prioridades = {'baixa': 'success', 'media': 'warning', 'alta': 'danger', 'critica': 'dark'} %}
+                    <span class="badge bg-{{ prioridades.get(chamado.priority, 'secondary') }} fs-6 px-3 py-2">{{ chamado.priority|capitalize if chamado.priority else 'N/A' }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">Solicitante</small>
+                        <strong>{{ chamado.solicitante.name }}</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">Técnico Responsável</small>
+                        <strong>{{ chamado.tecnico.name if chamado.tecnico else '<span class="text-warning"><i class="bi bi-clock"></i> Aguardando</span>'|safe }}</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">Categoria</small>
+                        <strong>{{ chamado.category.name if chamado.category else '-' }}</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">Departamento</small>
+                        <strong>{{ chamado.department.name if chamado.department else '-' }}</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">Localização</small>
+                        <strong>{{ chamado.location or '-' }}</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">Equipamento / Patrimônio</small>
+                        <strong>{{ chamado.equipment or '-' }}{% if chamado.patrimony %} / {{ chamado.patrimony }}{% endif %}</strong>
+                    </div>
+                </div>
+                
+                <hr>
+                <h6>Descrição</h6>
+                <p class="text-muted" style="white-space: pre-wrap;">{{ chamado.description }}</p>
+                
+                {% if chamado.attachments_rel %}
+                <hr>
+                <h6>Anexos</h6>
+                <div class="d-flex gap-2 flex-wrap">
+                    {% for att in chamado.attachments_rel %}
+                    <a href="{{ url_for('uploaded_file', filename=att.filename) }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                        <i class="bi bi-paperclip"></i> {{ att.original_name }}
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Mensagens / Chat -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-chat-dots me-2"></i>Mensagens</h6>
+            </div>
+            <div class="card-body messages-container" id="messagesContainer" style="max-height: 400px; overflow-y: auto;">
+                {% for msg in messages %}
+                <div class="message {{ 'message-user' if msg.user_id == current_user.id else 'message-tech' }}">
+                    <div class="message-header">
+                        <strong>{{ msg.user.name }}</strong>
+                        <small class="text-muted">{{ msg.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                    </div>
+                    <div class="message-body">{{ msg.content }}</div>
+                    {% if msg.attachments %}
+                    <div class="message-attachments mt-1">
+                        {% for att in msg.attachments %}
+                        <a href="{{ url_for('uploaded_file', filename=att.filename) }}" class="btn btn-sm btn-link p-0 me-2" target="_blank">
+                            <i class="bi bi-paperclip"></i> {{ att.original_name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-chat fs-2 d-block mb-2"></i>
+                    Nenhuma mensagem ainda
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if chamado.status not in ['finalizado', 'cancelado'] %}
+            <div class="card-footer bg-white">
+                <form method="POST" action="{{ url_for('send_message', id=chamado.id) }}" enctype="multipart/form-data" class="d-flex gap-2">
+                    <input type="text" class="form-control" name="content" placeholder="Digite sua mensagem..." required>
+                    <input type="file" class="form-control d-none" name="attachment" id="msgFile">
+                    <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('msgFile').click()">
+                        <i class="bi bi-paperclip"></i>
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send"></i>
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Sidebar do Chamado -->
+    <div class="col-lg-4">
+        <!-- Ações -->
+        {% if current_user.profile in ['tecnico', 'admin'] %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white"><h6 class="mb-0"><i class="bi bi-gear me-2"></i>Ações</h6></div>
+            <div class="card-body">
+                {% if not chamado.tecnico_id %}
+                <form method="POST" action="{{ url_for('assumir_chamado', id=chamado.id) }}" class="mb-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-hand-index-thumb me-2"></i> Assumir Chamado
+                    </button>
+                </form>
+                {% endif %}
+                
+                <form method="POST" action="{{ url_for('update_status', id=chamado.id) }}" class="mb-2">
+                    <div class="input-group">
+                        <select class="form-select" name="status">
+                            {% for s in ['novo', 'em_analise', 'em_atendimento', 'aguardando_usuario', 'aguardando_fornecedor', 'aguardando_peca', 'resolvido', 'finalizado', 'cancelado'] %}
+                            <option value="{{ s }}" {% if s == chamado.status %}selected{% endif %}>{{ s.replace('_', ' ')|title }}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-outline-primary" type="submit"><i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </form>
+                
+                <form method="POST" action="{{ url_for('update_priority', id=chamado.id) }}" class="mb-2">
+                    <div class="input-group">
+                        <select class="form-select" name="priority">
+                            {% for p in ['baixa', 'media', 'alta', 'critica'] %}
+                            <option value="{{ p }}" {% if p == chamado.priority %}selected{% endif %}>{{ p|capitalize }}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-outline-warning" type="submit"><i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </form>
+                
+                <form method="POST" action="{{ url_for('transferir_chamado', id=chamado.id) }}">
+                    <div class="input-group">
+                        <select class="form-select" name="tecnico_id">
+                            <option value="">Transferir para...</option>
+                            {% for t in tecnicos %}
+                            <option value="{{ t.id }}">{{ t.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if current_user.profile == 'solicitante' and chamado.status in ['resolvido', 'finalizado'] %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white"><h6 class="mb-0"><i class="bi bi-star me-2"></i>Avaliar Atendimento</h6></div>
+            <div class="card-body text-center">
+                {% if chamado.avaliacao %}
+                <p>Sua avaliação: 
+                    {% for i in range(chamado.avaliacao.nota) %}⭐{% endfor %}
+                </p>
+                {% if chamado.avaliacao.comentario %}
+                <p class="text-muted">{{ chamado.avaliacao.comentario }}</p>
+                {% endif %}
+                {% else %}
+                <form method="POST" action="{{ url_for('avaliar_chamado', id=chamado.id) }}">
+                    <div class="star-rating mb-2" id="starRating">
+                        {% for i in range(5, 0, -1) %}
+                        <input type="radio" name="nota" value="{{ i }}" id="star{{ i }}" {% if i == 5 %}checked{% endif %}>
+                        <label for="star{{ i }}"><i class="bi bi-star-fill"></i></label>
+                        {% endfor %}
+                    </div>
+                    <textarea class="form-control mb-2" name="comentario" rows="2" placeholder="Comentário (opcional)"></textarea>
+                    <button type="submit" class="btn btn-primary w-100">Enviar Avaliação</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if current_user.profile == 'solicitante' and chamado.status in ['resolvido', 'finalizado'] %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-body text-center">
+                <form method="POST" action="{{ url_for('reabrir_chamado', id=chamado.id) }}">
+                    <button type="submit" class="btn btn-outline-warning w-100" onclick="return confirm('Tem certeza que deseja reabrir este chamado?')">
+                        <i class="bi bi-arrow-counterclockwise me-2"></i> Reabrir Chamado
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- SLA -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white"><h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>SLA</h6></div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>1º Atendimento:</span>
+                    <strong>{{ chamado.created_at.strftime('%d/%m %H:%M') if chamado.created_at else '-' }}</strong>
+                </div>
+                {% if chamado.sla %}
+                <div class="progress mb-2" style="height: 8px;">
+                    <div class="progress-bar {{ 'bg-danger' if chamado.sla_excedido else 'bg-success' }}" 
+                         style="width: {{ chamado.sla_percent }}%"></div>
+                </div>
+                <small class="text-muted d-block text-center">
+                    {% if chamado.sla_excedido %}
+                    <span class="text-danger"><i class="bi bi-exclamation-triangle"></i> SLA Excedido</span>
+                    {% else %}
+                    {{ chamado.sla_restante }} restantes
+                    {% endif %}
+                </small>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Histórico -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-white"><h6 class="mb-0"><i class="bi bi-list-stars me-2"></i>Histórico</h6></div>
+            <div class="card-body history-timeline" style="max-height: 300px; overflow-y: auto;">
+                {% for h in historico %}
+                <div class="history-item">
+                    <div class="history-dot"></div>
+                    <div class="history-content">
+                        <small class="text-muted">{{ h.created_at.strftime('%d/%m %H:%M') }}</small>
+                        <p class="mb-0">{{ h.action }}</p>
+                        {% if h.details %}<small class="text-muted">{{ h.details }}</small>{% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <i class="bi bi-clock fs-4 d-block mb-1"></i>
+                    Nenhum registro
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-scroll para última mensagem
+const container = document.getElementById('messagesContainer');
+if (container) container.scrollTop = container.scrollHeight;
+</script>
+{% endblock %}
