@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Soluções Rápidas{% endblock %}
+{% block page_title %}Soluções Rápidas{% endblock %}
+{% block page_subtitle %}Gerenciar catálogo de autoatendimento{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h6 class="mb-0"><i class="bi bi-tools me-2"></i>{{ solutions|length }} solução(ões)</h6>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addSolutionModal">
+            <i class="bi bi-plus-lg me-1"></i> Nova Solução
+        </button>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nome</th>
+                        <th>Categoria</th>
+                        <th>Script</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in solutions %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="{{ s.icon }} fs-5 text-primary"></i>
+                                <span class="fw-medium">{{ s.name }}</span>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-light text-dark">{{ s.category }}</span></td>
+                        <td>
+                            {% if s.script_file %}
+                            <a href="{{ url_for('download_solution_file', id=s.id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-download"></i> {{ s.script_file }}
+                            </a>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.is_active %}
+                            <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('toggle_solution', id=s.id) }}" class="btn btn-outline-warning" title="Ativar/Desativar">
+                                    <i class="bi bi-toggle-on"></i>
+                                </a>
+                                <a href="{{ url_for('delete_solution', id=s.id) }}" class="btn btn-outline-danger" onclick="return confirm('Excluir {{ s.name }}?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="bi bi-tools fs-1 d-block mb-3"></i>
+                            Nenhuma solução cadastrada
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addSolutionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('add_solution') }}" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nova Solução Rápida</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nome *</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Categoria *</label>
+                            <select class="form-select" name="category" required>
+                                <option value="rede">Rede</option>
+                                <option value="impressoras">Impressoras</option>
+                                <option value="windows">Windows</option>
+                                <option value="office">Office</option>
+                                <option value="navegadores">Navegadores</option>
+                                <option value="sistemas">Sistemas Internos</option>
+                                <option value="utilidades">Utilidades</option>
+                                <option value="outros">Outros</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descrição</label>
+                            <textarea class="form-control" name="description" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Ícone (Bootstrap)</label>
+                            <input type="text" class="form-control" name="icon" value="bi bi-tools">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Arquivo (.bat, .cmd, .ps1)</label>
+                            <input type="file" class="form-control" name="script_file" accept=".bat,.cmd,.ps1,.exe">
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" name="needs_admin" id="needsAdmin">
+                                <label class="form-check-label" for="needsAdmin">
+                                    Requer privilégios administrativos
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
