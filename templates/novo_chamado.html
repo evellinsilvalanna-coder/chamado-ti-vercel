@@ -12,14 +12,14 @@
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label">Título <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="title" required placeholder="Descreva resumidamente o problema">
+                            <input type="text" class="form-control" name="titulo" required placeholder="Descreva resumidamente o problema">
                         </div>
                         
                         <div class="col-md-6">
                             <label class="form-label">Categoria <span class="text-danger">*</span></label>
-                            <select class="form-select" name="category_id" required>
+                            <select class="form-select" name="categoria_id" required>
                                 <option value="">Selecione...</option>
-                                {% for cat in categories %}
+                                {% for cat in categorias %}
                                 <option value="{{ cat.id }}">{{ cat.name }}</option>
                                 {% endfor %}
                             </select>
@@ -27,7 +27,7 @@
                         
                         <div class="col-md-6">
                             <label class="form-label">Prioridade <span class="text-danger">*</span></label>
-                            <select class="form-select" name="priority" required>
+                            <select class="form-select" name="prioridade" required>
                                 <option value="baixa">Baixa</option>
                                 <option value="media" selected>Média</option>
                                 <option value="alta">Alta</option>
@@ -47,27 +47,27 @@
                         
                         <div class="col-md-6">
                             <label class="form-label">Localização</label>
-                            <input type="text" class="form-control" name="location" placeholder="Ex: Sala 201, Prédio A">
+                            <input type="text" class="form-control" name="localizacao" placeholder="Ex: Sala 201, Prédio A">
                         </div>
                         
                         <div class="col-md-4">
                             <label class="form-label">Equipamento</label>
-                            <input type="text" class="form-control" name="equipment" placeholder="Ex: Notebook Dell XPS">
+                            <input type="text" class="form-control" name="equipamento" placeholder="Ex: Notebook Dell XPS">
                         </div>
                         
                         <div class="col-md-4">
                             <label class="form-label">Patrimônio</label>
-                            <input type="text" class="form-control" name="patrimony" placeholder="Nº de patrimônio">
+                            <input type="text" class="form-control" name="patrimonio" placeholder="Nº de patrimônio">
                         </div>
                         
                         <div class="col-md-4">
                             <label class="form-label">Telefone</label>
-                            <input type="text" class="form-control" name="phone" id="phone" placeholder="(12) 99999-9999" value="{{ current_user.phone or '' }}">
+                            <input type="text" class="form-control" name="telefone" id="phone" placeholder="(12) 99999-9999" value="{{ current_user.phone or '' }}">
                         </div>
                         
                         <div class="col-12">
                             <label class="form-label">Descrição Detalhada <span class="text-danger">*</span></label>
-                            <textarea class="form-control" name="description" rows="6" required placeholder="Descreva detalhadamente o problema, incluindo o que estava fazendo quando ocorreu, mensagens de erro exibidas, e o que já tentou fazer para resolver..."></textarea>
+                            <textarea class="form-control" name="descricao" rows="6" required placeholder="Descreva detalhadamente o problema, incluindo o que estava fazendo quando ocorreu, mensagens de erro exibidas, e o que já tentou fazer para resolver..."></textarea>
                         </div>
                         
                         <div class="col-12">
