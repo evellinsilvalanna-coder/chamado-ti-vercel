@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Resolver Problemas{% endblock %}
+{% block page_title %}Resolver Problemas{% endblock %}
+{% block page_subtitle %}Autoatendimento — soluções rápidas para problemas comuns{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm bg-primary text-white">
+            <div class="card-body p-4 text-center">
+                <i class="bi bi-tools display-4 d-block mb-3"></i>
+                <h4>Antes de abrir um chamado, tente resolver aqui!</h4>
+                <p class="mb-0 opacity-75">Selecione uma solução abaixo e o sistema executará automaticamente no seu computador.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="input-group input-group-lg">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" id="searchSolution" placeholder="Pesquisar soluções...">
+        </div>
+    </div>
+    <div class="col-md-4">
+        <select class="form-select form-select-lg" id="filterCategory">
+            <option value="">Todas as Categorias</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+{% set cat_icons = {
+    'Rede': 'bi-wifi',
+    'Impressoras': 'bi-printer',
+    'Windows': 'bi-windows',
+    'Office': 'bi-filetype-docx',
+    'Navegadores': 'bi-globe',
+    'Sistemas internos': 'bi-server',
+    'Utilidades': 'bi-tool'
+} %}
+
+{% for cat_name, solucoes in grouped_solutions.items() %}
+<div class="solution-category mb-4" data-category="{{ cat_name }}">
+    <div class="d-flex align-items-center mb-3">
+        <div class="category-icon me-3">
+            <i class="bi {{ cat_icons.get(cat_name, 'bi-gear') }} fs-3"></i>
+        </div>
+        <div>
+            <h5 class="mb-0">{{ cat_name }}</h5>
+            <small class="text-muted">{{ solucoes|length }} solução(ões)</small>
+        </div>
+    </div>
+    
+    <div class="row g-2">
+        {% for sol in solucoes %}
+        <div class="col-6 col-md-4 col-lg-3 solution-item" data-name="{{ sol.name|lower }}">
+            <button class="btn btn-outline-primary solution-btn w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3" 
+                    onclick="executeSolution('{{ sol.id }}', '{{ sol.name }}')"
+                    data-bs-toggle="modal" data-bs-target="#solutionModal">
+                <i class="bi {{ sol.icon or 'bi-gear' }} fs-2 mb-2"></i>
+                <span class="small text-center">{{ sol.name }}</span>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-emoji-frown fs-1 text-muted d-block mb-3"></i>
+    <h5 class="text-muted">Nenhuma solução disponível no momento</h5>
+</div>
+{% endfor %}
+
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="solutionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="solutionModalTitle">Executar Solução</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center" id="solutionModalBody">
+                <i class="bi bi-shield-check text-success fs-1 d-block mb-3"></i>
+                <p id="solutionDesc">Tem certeza que deseja executar esta solução?</p>
+                <div class="progress d-none" id="solutionProgress" style="height: 20px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+                </div>
+                <div id="solutionResult" class="d-none"></div>
+            </div>
+            <div class="modal-footer" id="solutionModalFooter">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmExecute" onclick="confirmExecution()">
+                    <i class="bi bi-play-fill me-2"></i> Executar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentSolutionId = null;
+
+function executeSolution(id, name) {
+    currentSolutionId = id;
+    document.getElementById('solutionModalTitle').textContent = name;
+    document.getElementById('solutionDesc').textContent = 'Tem certeza que deseja executar "' + name + '" no seu computador?';
+    document.getElementById('solutionProgress').classList.add('d-none');
+    document.getElementById('solutionResult').classList.add('d-none');
+    document.getElementById('solutionModalFooter').classList.remove('d-none');
+}
+
+function confirmExecution() {
+    const footer = document.getElementById('solutionModalFooter');
+    const progress = document.getElementById('solutionProgress');
+    const result = document.getElementById('solutionResult');
+    
+    footer.classList.add('d-none');
+    progress.classList.remove('d-none');
+    let width = 0;
+    const interval = setInterval(() => {
+        width += 5;
+        progress.querySelector('.progress-bar').style.width = width + '%';
+        if (width >= 100) clearInterval(interval);
+    }, 200);
+    
+    fetch('/api/solutions/' + currentSolutionId + '/execute', {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token() if csrf_token else "" }}{% if not csrf_token %}{% endif %}'}
+    })
+    .then(r => r.json())
+    .then(data => {
+        progress.classList.add('d-none');
+        result.classList.remove('d-none');
+        if (data.success) {
+            result.innerHTML = '<i class="bi bi-check-circle-fill text-success fs-1 d-block mb-2"></i><h5 class="text-success">' + data.message + '</h5>';
+        } else {
+            result.innerHTML = '<i class="bi bi-x-circle-fill text-danger fs-1 d-block mb-2"></i><h5 class="text-danger">' + data.message + '</h5>';
+        }
+        setTimeout(() => location.reload(), 3000);
+    })
+    .catch(err => {
+        progress.classList.add('d-none');
+        result.classList.remove('d-none');
+        result.innerHTML = '<i class="bi bi-x-circle-fill text-danger fs-1 d-block mb-2"></i><h5 class="text-danger">Erro ao executar: ' + err.message + '</h5>';
+    });
+}
+
+// Filtros
+document.getElementById('searchSolution')?.addEventListener('input', filterSolutions);
+document.getElementById('filterCategory')?.addEventListener('change', filterSolutions);
+
+function filterSolutions() {
+    const search = document.getElementById('searchSolution').value.toLowerCase();
+    const cat = document.getElementById('filterCategory').value;
+    
+    document.querySelectorAll('.solution-item').forEach(item => {
+        const name = item.dataset.name;
+        const catDiv = item.closest('.solution-category');
+        const catName = catDiv ? catDiv.dataset.category : '';
+        
+        const matchesSearch = !search || name.includes(search);
+        const matchesCat = !cat || catName === cat;
+        
+        item.style.display = matchesSearch && matchesCat ? '' : 'none';
+    });
+    
+    document.querySelectorAll('.solution-category').forEach(catDiv => {
+        const visible = catDiv.querySelectorAll('.solution-item[style*="display: none"]').length === 0;
+        // sem display none significa que pelo menos um está visível
+        const hasVisible = catDiv.querySelectorAll('.solution-item[style*="display: none"]').length < catDiv.querySelectorAll('.solution-item').length;
+        catDiv.style.display = hasVisible ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}
