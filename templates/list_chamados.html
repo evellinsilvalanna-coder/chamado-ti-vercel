@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Lista de Chamados{% endblock %}
+{% block page_title %}Chamados{% endblock %}
+{% block page_subtitle %}{{ chamados.total }} chamado(s) encontrado(s){% endblock %}
+
+{% block content %}
+<!-- Filtros -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-2">
+            <div class="col-md-3">
+                <input type="text" class="form-control" name="protocolo" placeholder="Protocolo" value="{{ request.args.get('protocolo', '') }}">
+            </div>
+            <div class="col-md-3">
+                <input type="text" class="form-control" name="q" placeholder="Palavra-chave" value="{{ request.args.get('q', '') }}">
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="status">
+                    <option value="">Todos Status</option>
+                    {% for s in ['novo', 'em_analise', 'em_atendimento', 'aguardando_usuario', 'aguardando_fornecedor', 'aguardando_peca', 'resolvido', 'finalizado', 'cancelado'] %}
+                    <option value="{{ s }}" {% if request.args.get('status') == s %}selected{% endif %}>{{ s.replace('_', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="categoria">
+                    <option value="">Todas Categorias</option>
+                    {% for c in categories %}
+                    <option value="{{ c.id }}" {% if request.args.get('categoria')|string == c.id|string %}selected{% endif %}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabela -->
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Protocolo</th>
+                        <th>Título</th>
+                        {% if current_user.profile != 'solicitante' %}<th>Solicitante</th>{% endif %}
+                        <th>Categoria</th>
+                        <th>Prioridade</th>
+                        <th>Status</th>
+                        <th>Técnico</th>
+                        <th>Data</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in chamados.items %}
+                    <tr>
+                        <td><span class="protocolo-badge">{{ c.protocolo }}</span></td>
+                        <td class="text-truncate" style="max-width: 180px;">{{ c.title }}</td>
+                        {% if current_user.profile != 'solicitante' %}<td><small>{{ c.solicitante.name }}</small></td>{% endif %}
+                        <td><span class="badge bg-light text-dark">{{ c.category.name if c.category else '-' }}</span></td>
+                        <td>{% set pcolors = {'baixa': 'success', 'media': 'warning', 'alta': 'danger', 'critica': 'dark'} %}
+                            <span class="badge bg-{{ pcolors.get(c.priority, 'secondary') }}">{{ c.priority|capitalize if c.priority else 'N/A' }}</span>
+                        </td>
+                        <td>{% set scolors = {'novo': 'primary', 'em_analise': 'info', 'em_atendimento': 'warning', 'aguardando_usuario': 'secondary', 'aguardando_fornecedor': 'secondary', 'aguardando_peca': 'secondary', 'resolvido': 'success', 'finalizado': 'success', 'cancelado': 'danger'} %}
+                            <span class="badge bg-{{ scolors.get(c.status, 'secondary') }}">{{ c.get_status_display() }}</span>
+                        </td>
+                        <td><small>{{ c.tecnico.name if c.tecnico else '-' }}</small></td>
+                        <td><small class="text-muted">{{ c.created_at.strftime('%d/%m/%Y') }}</small></td>
+                        <td><a href="{{ url_for('view_chamado', id=c.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                            Nenhum chamado encontrado
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Paginação -->
+        {% if chamados.pages > 1 %}
+        <div class="card-footer bg-white">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    {% for page in chamados.iter_pages() %}
+                    {% if page %}
+                    <li class="page-item {{ 'active' if page == chamados.page else '' }}">
+                        <a class="page-link" href="{{ url_for('list_chamados', page=page, **request.args) }}">{{ page }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
