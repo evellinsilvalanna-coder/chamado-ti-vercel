@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Novo Chamado{% endblock %}
+{% block page_title %}Novo Chamado{% endblock %}
+{% block page_subtitle %}Abra uma solicitação de suporte técnico{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST" enctype="multipart/form-data" id="chamadoForm">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Título <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="title" required placeholder="Descreva resumidamente o problema">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Categoria <span class="text-danger">*</span></label>
+                            <select class="form-select" name="category_id" required>
+                                <option value="">Selecione...</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Prioridade <span class="text-danger">*</span></label>
+                            <select class="form-select" name="priority" required>
+                                <option value="baixa">Baixa</option>
+                                <option value="media" selected>Média</option>
+                                <option value="alta">Alta</option>
+                                <option value="critica">Crítica</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Departamento <span class="text-danger">*</span></label>
+                            <select class="form-select" name="department_id" required>
+                                <option value="">Selecione...</option>
+                                {% for dept in departments %}
+                                <option value="{{ dept.id }}" {% if current_user.department_id == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Localização</label>
+                            <input type="text" class="form-control" name="location" placeholder="Ex: Sala 201, Prédio A">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Equipamento</label>
+                            <input type="text" class="form-control" name="equipment" placeholder="Ex: Notebook Dell XPS">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Patrimônio</label>
+                            <input type="text" class="form-control" name="patrimony" placeholder="Nº de patrimônio">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Telefone</label>
+                            <input type="text" class="form-control" name="phone" id="phone" placeholder="(12) 99999-9999" value="{{ current_user.phone or '' }}">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Descrição Detalhada <span class="text-danger">*</span></label>
+                            <textarea class="form-control" name="description" rows="6" required placeholder="Descreva detalhadamente o problema, incluindo o que estava fazendo quando ocorreu, mensagens de erro exibidas, e o que já tentou fazer para resolver..."></textarea>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Anexos</label>
+                            <input type="file" class="form-control" name="attachments" multiple accept=".png,.jpg,.jpeg,.gif,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.txt">
+                            <small class="text-muted">Formatos aceitos: PNG, JPG, PDF, DOC, XLS, ZIP. Máx: 50MB</small>
+                        </div>
+                        
+                        <div class="col-12 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="bi bi-send me-2"></i> Abrir Chamado
+                            </button>
+                            <a href="{{ url_for('dashboard_solicitante') }}" class="btn btn-outline-secondary btn-lg ms-2">
+                                <i class="bi bi-x me-2"></i> Cancelar
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('phone')?.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.slice(0, 11);
+    if (value.length > 6) {
+        value = `(${value.slice(0,2)}) ${value.slice(2,7)}-${value.slice(7)}`;
+    } else if (value.length > 2) {
+        value = `(${value.slice(0,2)}) ${value.slice(2)}`;
+    } else if (value.length > 0) {
+        value = `(${value}`;
+    }
+    e.target.value = value;
+});
+</script>
+{% endblock %}
