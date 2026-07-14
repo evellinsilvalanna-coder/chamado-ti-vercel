@@ -20,6 +20,8 @@ class User(UserMixin, db.Model):
     profile = db.Column(db.String(20), nullable=False, default='solicitante')  # solicitante, tecnico, admin
     is_active = db.Column(db.Boolean, default=True)
     avatar = db.Column(db.String(200))
+    reset_token = db.Column(db.String(100))
+    reset_token_expiry = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=get_sao_paulo_time)
     last_login = db.Column(db.DateTime)
 
