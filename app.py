@@ -114,20 +114,30 @@ def calculate_sla(chamado):
     db.session.commit()
 
 def get_sla_status(chamado):
-    """Retorna status do SLA: ok, warning, breached"""
+    """Retorna dict com status do SLA pra usar no template"""
     now = now_sp()
     if chamado.status in ['finalizado', 'cancelado']:
-        return 'ok'
+        return {'excedido': False, 'percent': 100, 'restante': 'Finalizado'}
     
-    if chamado.sla_resolution_deadline and now > chamado.sla_resolution_deadline:
-        return 'breached'
-    if chamado.sla_resolution_deadline:
-        diff = chamado.sla_resolution_deadline - now
-        total_hours = (chamado.sla_resolution_deadline - (chamado.created_at or now)).total_seconds() / 3600
-        remaining_hours = diff.total_seconds() / 3600
-        if remaining_hours < total_hours * 0.1:  # menos de 10% do tempo
-            return 'warning'
-    return 'ok'
+    if not chamado.sla_resolution_deadline:
+        return None
+    
+    if now > chamado.sla_resolution_deadline:
+        return {'excedido': True, 'percent': 100, 'restante': '0h'}
+    
+    diff = chamado.sla_resolution_deadline - now
+    total = (chamado.sla_resolution_deadline - (chamado.created_at or now)).total_seconds()
+    restante_segundos = diff.total_seconds()
+    percent = ((total - restante_segundos) / total * 100) if total > 0 else 0
+    
+    dias = int(restante_segundos // 86400)
+    horas = int((restante_segundos % 86400) // 3600)
+    if dias > 0:
+        restante_str = f'{dias}d {horas}h'
+    else:
+        restante_str = f'{horas}h'
+    
+    return {'excedido': False, 'percent': min(percent, 100), 'restante': restante_str}
 
 # ─── Login Manager ──────────────────────────────────────────────────
 
@@ -417,7 +427,7 @@ def list_chamados():
     chamados = query.order_by(Chamado.created_at.desc()).paginate(page=page, per_page=per_page)
     categorias = Category.query.all()
     
-    return render_template('list_chamados.html', chamados=chamados, categorias=categorias)
+    return render_template('list_chamados.html', chamados=chamados, categories=categorias)
 
 @app.route('/chamados/novo', methods=['GET', 'POST'])
 @login_required
