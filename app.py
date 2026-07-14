@@ -924,7 +924,13 @@ def download_attachment(id):
 @has_role('solicitante')
 def autoatendimento():
     solutions = QuickSolution.query.filter_by(is_active=True).all()
-    return render_template('autoatendimento.html', solutions=solutions)
+    categories = [s.category for s in solutions if s.category]
+    categories = sorted(set(categories))
+    grouped = {}
+    for s in solutions:
+        grouped.setdefault(s.category, []).append(s)
+    return render_template('autoatendimento.html', solutions=solutions,
+                          categories=categories, grouped_solutions=grouped)
 
 @app.route('/api/autoatendimento/execute/<int:id>', methods=['POST'])
 @login_required
