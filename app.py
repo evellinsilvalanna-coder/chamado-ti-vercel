@@ -94,20 +94,24 @@ def add_history(chamado_id, user_id, action, status_anterior=None, novo_status=N
 
 def calculate_sla(chamado):
     """Calcula e retorna informações de SLA para um chamado."""
-    sla = SLA.query.filter_by(category_id=chamado.categoria_id, priority=chamado.prioridade).first()
-    if not sla:
-        # SLA padrão
-        sla_defaults = {
-            'baixa': (48, 168, 12),
-            'media': (24, 72, 6),
-            'alta': (8, 24, 2),
-            'critica': (1, 4, 1)
-        }
-        first_resp, resolution, warning = sla_defaults.get(chamado.prioridade, (24, 72, 6))
+    if not chamado.categoria_id:
+        # Sem categoria definida, usa SLA padrão genérico
+        first_resp, resolution, warning = 24, 72, 6
     else:
-        first_resp = sla.first_response_hours
-        resolution = sla.resolution_hours
-        warning = sla.warning_hours
+        sla = SLA.query.filter_by(category_id=chamado.categoria_id, priority=chamado.prioridade).first()
+        if not sla:
+            # SLA padrão
+            sla_defaults = {
+                'baixa': (48, 168, 12),
+                'media': (24, 72, 6),
+                'alta': (8, 24, 2),
+                'critica': (1, 4, 1)
+            }
+            first_resp, resolution, warning = sla_defaults.get(chamado.prioridade, (24, 72, 6))
+        else:
+            first_resp = sla.first_response_hours
+            resolution = sla.resolution_hours
+            warning = sla.warning_hours
 
     chamado.sla_first_response_deadline = now_sp() + timedelta(hours=first_resp)
     chamado.sla_resolution_deadline = now_sp() + timedelta(hours=resolution)
@@ -364,7 +368,7 @@ def dashboard_tecnico():
     # Listas de chamados pro painel
     chamados_novos = Chamado.query.filter_by(status='novo').order_by(Chamado.created_at.desc()).limit(10).all()
     chamados_andamento = Chamado.query.filter(
-        Chamado.status.in_(['em_analise', 'em_atendimento', 'aguardando_usuario', 'aguardando_fornecedor', 'aguardando_peca'])
+        Chamado.status.in_(['em_analise', 'em_atendimento', 'pendente', 'aguardando_usuario', 'aguardando_fornecedor', 'aguardando_peca'])
     ).order_by(Chamado.updated_at.desc()).limit(10).all()
     chamados_concluidos = Chamado.query.filter(
         Chamado.status.in_(['resolvido', 'finalizado', 'cancelado'])
@@ -956,7 +960,7 @@ def autoatendimento():
 
 @app.route('/api/autoatendimento/execute/<int:id>', methods=['POST'])
 @login_required
-@has_role('solicitante')
+@has_role('solicitante', 'tecnico', 'admin')
 def execute_solution(id):
     solution = QuickSolution.query.get_or_404(id)
     
