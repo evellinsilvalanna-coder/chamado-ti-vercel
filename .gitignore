@@ -1,0 +1,34 @@
+# Ambiente Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Banco de dados
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads / arquivos de usuário
+uploads/*
+!uploads/.gitkeep
+solutions/*
+!solutions/.gitkeep
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
+.env
