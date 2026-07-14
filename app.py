@@ -707,7 +707,7 @@ def update_status(id):
 @app.route('/api/chamados/<int:id>/assume', methods=['POST'])
 @login_required
 @has_role('tecnico', 'admin')
-def assumir_chamado(id):
+def api_assume_chamado(id):
     chamado = Chamado.query.get_or_404(id)
     
     if chamado.tecnico_id and chamado.tecnico_id != current_user.id:
