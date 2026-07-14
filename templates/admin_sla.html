@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}SLA{% endblock %}
+{% block page_title %}SLA - Service Level Agreement{% endblock %}
+{% block page_subtitle %}Configuração de prazos e alertas{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Configurações de SLA</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Tempo máximo para primeiro atendimento (horas)</label>
+                            <input type="number" class="form-control" name="first_response_time" 
+                                   value="{{ sla.first_response_time if sla else 4 }}" min="1" step="0.5" required>
+                            <small class="text-muted">Tempo máximo para o técnico responder ao chamado</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tempo máximo para resolução (horas)</label>
+                            <input type="number" class="form-control" name="resolution_time" 
+                                   value="{{ sla.resolution_time if sla else 24 }}" min="1" step="0.5" required>
+                            <small class="text-muted">Tempo máximo para resolução do chamado</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Alerta de vencimento (minutos antes)</label>
+                            <input type="number" class="form-control" name="alert_before" 
+                                   value="{{ sla.alert_before if sla else 60 }}" min="1" required>
+                            <small class="text-muted">Quando o sistema deve alertar sobre SLA próximo do vencimento</small>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" name="auto_escalate" id="autoEscalate"
+                                       {% if sla and sla.auto_escalate %}checked{% endif %}>
+                                <label class="form-check-label" for="autoEscalate">
+                                    Escalonamento automático
+                                </label>
+                                <small class="text-muted d-block">Notificar administradores quando SLA for excedido</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i> Salvar Configurações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
