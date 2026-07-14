@@ -91,19 +91,64 @@
     </div>
 </div>
 
-<!-- Fila de Chamados -->
+<!-- Chamados Recentes -->
+<div class="card shadow-sm mb-3">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-ticket-perforated me-2"></i>Novos</h6>
+        <a href="{{ url_for('list_chamados', status='novo') }}" class="btn btn-sm btn-outline-primary">Ver Todos</a>
+    </div>
+    <div class="list-group list-group-flush">
+        {% for c in chamados_novos %}
+        <a href="{{ url_for('view_chamado', id=c.id) }}" class="list-group-item list-group-item-action">
+            <div class="d-flex justify-content-between">
+                <strong>{{ c.titulo[:40] }}{% if c.titulo|length > 40 %}...{% endif %}</strong>
+                <small class="text-muted">{{ c.created_at.strftime('%d/%m %H:%M') }}</small>
+            </div>
+            <small class="text-muted">{{ c.protocolo }} · {{ c.solicitante.name }}</small>
+        </a>
+        {% else %}
+        <div class="text-center py-3 text-muted"><small>Nenhum chamado novo</small></div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-gear-wide-connected me-2"></i>Em Andamento</h6>
+        <a href="{{ url_for('list_chamados') }}" class="btn btn-sm btn-outline-warning">Ver Todos</a>
+    </div>
+    <div class="list-group list-group-flush">
+        {% for c in chamados_andamento %}
+        <a href="{{ url_for('view_chamado', id=c.id) }}" class="list-group-item list-group-item-action">
+            <div class="d-flex justify-content-between">
+                <strong>{{ c.titulo[:40] }}{% if c.titulo|length > 40 %}...{% endif %}</strong>
+                <small class="text-muted">{{ c.created_at.strftime('%d/%m %H:%M') }}</small>
+            </div>
+            <small class="text-muted">{{ c.protocolo }} · {{ c.status.replace('_', ' ')|title }} · {{ c.tecnico.name if c.tecnico else 'Sem técnico' }}</small>
+        </a>
+        {% else %}
+        <div class="text-center py-3 text-muted"><small>Nenhum chamado em andamento</small></div>
+        {% endfor %}
+    </div>
+</div>
+
 <div class="card shadow-sm">
     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h6 class="mb-0"><i class="bi bi-list-ul me-2"></i>Fila de Chamados</h6>
-        <a href="{{ url_for('list_chamados') }}" class="btn btn-sm btn-outline-primary">Ver Todos</a>
+        <h6 class="mb-0"><i class="bi bi-check-circle me-2"></i>Concluídos</h6>
+        <a href="{{ url_for('list_chamados') }}" class="btn btn-sm btn-outline-success">Ver Todos</a>
     </div>
-    <div class="card-body p-0">
-        {% set fila = chamados_por_categoria %} {# placeholder - real query in app #}
-        <div class="text-center py-4 text-muted">
-            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-            <p>Use a página de chamados para gerenciar a fila</p>
-            <a href="{{ url_for('list_chamados') }}" class="btn btn-primary">Acessar Chamados</a>
-        </div>
+    <div class="list-group list-group-flush">
+        {% for c in chamados_concluidos %}
+        <a href="{{ url_for('view_chamado', id=c.id) }}" class="list-group-item list-group-item-action">
+            <div class="d-flex justify-content-between">
+                <strong>{{ c.titulo[:40] }}{% if c.titulo|length > 40 %}...{% endif %}</strong>
+                <small class="text-muted">{{ c.resolved_at.strftime('%d/%m %H:%M') if c.resolved_at else c.updated_at.strftime('%d/%m %H:%M') }}</small>
+            </div>
+            <small class="text-muted">{{ c.protocolo }} · {{ c.status.replace('_', ' ')|title }}</small>
+        </a>
+        {% else %}
+        <div class="text-center py-3 text-muted"><small>Nenhum chamado concluído</small></div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}
