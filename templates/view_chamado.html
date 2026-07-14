@@ -128,7 +128,7 @@
                 <form method="POST" action="{{ url_for('update_status', id=chamado.id) }}" class="mb-2">
                     <div class="input-group">
                         <select class="form-select" name="status">
-                            {% for s in ['novo', 'em_analise', 'em_atendimento', 'aguardando_usuario', 'aguardando_fornecedor', 'aguardando_peca', 'resolvido', 'finalizado', 'cancelado'] %}
+                            {% for s in ['novo', 'em_analise', 'em_atendimento', 'pendente', 'aguardando_usuario', 'aguardando_fornecedor', 'aguardando_peca', 'resolvido', 'finalizado', 'cancelado'] %}
                             <option value="{{ s }}" {% if s == chamado.status %}selected{% endif %}>{{ s.replace('_', ' ')|title }}</option>
                             {% endfor %}
                         </select>
