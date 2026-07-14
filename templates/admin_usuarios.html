@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Gerenciar Usuários{% endblock %}
+{% block page_title %}Usuários{% endblock %}
+{% block page_subtitle %}Cadastro e gerenciamento de usuários do sistema{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h6 class="mb-0"><i class="bi bi-people me-2"></i>{{ users|length }} usuário(s) cadastrado(s)</h6>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+            <i class="bi bi-plus-lg me-1"></i> Novo Usuário
+        </button>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nome</th>
+                        <th>E-mail</th>
+                        <th>Perfil</th>
+                        <th>Departamento</th>
+                        <th>Status</th>
+                        <th>Criado em</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar-circle" style="width: 32px; height: 32px; font-size: 14px;">
+                                    {{ u.name[:2]|upper }}
+                                </div>
+                                <span class="fw-medium">{{ u.name }}</span>
+                            </div>
+                        </td>
+                        <td><small>{{ u.email }}</small></td>
+                        <td>
+                            {% if u.profile == 'admin' %}
+                            <span class="badge bg-danger">Admin</span>
+                            {% elif u.profile == 'tecnico' %}
+                            <span class="badge bg-warning text-dark">Técnico</span>
+                            {% else %}
+                            <span class="badge bg-info">Solicitante</span>
+                            {% endif %}
+                        </td>
+                        <td><small>{{ u.department.name if u.department else '-' }}</small></td>
+                        <td>
+                            {% if u.is_active %}
+                            <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Bloqueado</span>
+                            {% endif %}
+                        </td>
+                        <td><small class="text-muted">{{ u.created_at.strftime('%d/%m/%Y') if u.created_at else '-' }}</small></td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="#" class="btn btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
+                                {% if u.is_active %}
+                                <a href="{{ url_for('block_user', id=u.id) }}" class="btn btn-outline-warning" title="Bloquear" onclick="return confirm('Bloquear {{ u.name }}?')"><i class="bi bi-lock"></i></a>
+                                {% else %}
+                                <a href="{{ url_for('unblock_user', id=u.id) }}" class="btn btn-outline-success" title="Desbloquear" onclick="return confirm('Desbloquear {{ u.name }}?')"><i class="bi bi-unlock"></i></a>
+                                {% endif %}
+                                <a href="{{ url_for('delete_user', id=u.id) }}" class="btn btn-outline-danger" title="Excluir" onclick="return confirm('Excluir {{ u.name }} permanentemente?')"><i class="bi bi-trash"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-people fs-1 d-block mb-3"></i>
+                            Nenhum usuário cadastrado
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add User -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin_new_user') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Novo Usuário</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nome *</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">E-mail *</label>
+                        <input type="email" class="form-control" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Senha</label>
+                        <input type="text" class="form-control" name="password" value="123456">
+                        <small class="text-muted">Padrão: 123456</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Perfil</label>
+                        <select class="form-select" name="profile">
+                            <option value="solicitante">Solicitante</option>
+                            <option value="tecnico">Técnico</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Departamento</label>
+                        <select class="form-select" name="department_id">
+                            <option value="">-- Selecione --</option>
+                            {% for d in departments %}
+                            <option value="{{ d.id }}">{{ d.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
