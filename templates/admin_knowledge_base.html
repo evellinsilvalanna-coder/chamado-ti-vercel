@@ -18,6 +18,7 @@
                     <tr>
                         <th>Título</th>
                         <th>Categoria</th>
+                        <th>Visível para</th>
                         <th>Visualizações</th>
                         <th>Publicado</th>
                         <th>Ações</th>
@@ -29,7 +30,16 @@
                         <td>
                             <a href="{{ url_for('knowledge_view', id=a.id) }}" class="text-decoration-none fw-medium">{{ a.title }}</a>
                         </td>
-                        <td><span class="badge bg-light text-dark">{{ a.category }}</span></td>
+                        <td><span class="badge bg-light text-dark">{{ a.category or '-' }}</span></td>
+                        <td>
+                            {% if a.visibility == 'all' %}
+                            <span class="badge bg-info">Todos</span>
+                            {% elif a.visibility == 'tecnico' %}
+                            <span class="badge bg-warning text-dark">Técnicos</span>
+                            {% elif a.visibility == 'solicitante' %}
+                            <span class="badge bg-success">Clientes</span>
+                            {% endif %}
+                        </td>
                         <td>{{ a.views }}</td>
                         <td>
                             {% if a.is_published %}
@@ -51,7 +61,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">
+                        <td colspan="6" class="text-center py-5 text-muted">
                             <i class="bi bi-journal-bookmark fs-1 d-block mb-3"></i>
                             Nenhum artigo cadastrado
                         </td>
@@ -66,7 +76,7 @@
 <div class="modal fade" id="addArticleModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form method="POST" action="{{ url_for('add_knowledge') }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ url_for('admin_new_article') }}" enctype="multipart/form-data">
                 <div class="modal-header">
                     <h5 class="modal-title">Novo Artigo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -79,19 +89,34 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Categoria</label>
-                            <input type="text" class="form-control" name="category" placeholder="Ex: Tutoriais, FAQs, Procedimentos">
+                            <input type="text" class="form-control" name="category" placeholder="Ex: Tutoriais, FAQs, Procedimentos" list="catSuggestions">
+                            <datalist id="catSuggestions">
+                                {% for cat in categorias %}
+                                <option value="{{ cat.name }}">
+                                {% endfor %}
+                            </datalist>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Conteúdo (HTML)</label>
-                            <textarea class="form-control" name="content" rows="8"></textarea>
+                            <label class="form-label">Conteúdo</label>
+                            <textarea class="form-control" name="content" rows="10" placeholder="Escreva o conteúdo do artigo... Use HTML para formatação (imgs, links, etc)"></textarea>
+                            <small class="text-muted">Você pode usar HTML: &lt;h3&gt;, &lt;img src='/uploads/nome.jpg'&gt;, &lt;strong&gt;</small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Tags (separadas por vírgula)</label>
                             <input type="text" class="form-control" name="tags" placeholder="rede, internet, configuração">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Arquivo</label>
-                            <input type="file" class="form-control" name="file">
+                            <label class="form-label">Visibilidade</label>
+                            <select class="form-select" name="visibility">
+                                <option value="all">Todos (público)</option>
+                                <option value="tecnico">Apenas Técnicos</option>
+                                <option value="solicitante">Apenas Clientes</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Anexos (imagens, PDFs, documentos)</label>
+                            <input type="file" class="form-control" name="attachments" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.pdf,.doc,.docx">
+                            <small class="text-muted">Após publicar, copie o caminho da imagem (ex: /uploads/kb_1_....jpg) e use no conteúdo com &lt;img src='/uploads/...'&gt;</small>
                         </div>
                     </div>
                 </div>
