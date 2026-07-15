@@ -232,12 +232,25 @@ class KnowledgeBase(db.Model):
     file_path = db.Column(db.String(300))
     file_type = db.Column(db.String(20))
     is_published = db.Column(db.Boolean, default=True)
+    visibility = db.Column(db.String(20), default='all')  # all, tecnico, solicitante
     views = db.Column(db.Integer, default=0)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=get_sao_paulo_time)
     updated_at = db.Column(db.DateTime, default=get_sao_paulo_time, onupdate=get_sao_paulo_time)
 
     author = db.relationship('User', backref='kb_articles')
+    attachments = db.relationship('KnowledgeAttachment', backref='article', lazy='dynamic', cascade='all, delete-orphan')
+
+
+class KnowledgeAttachment(db.Model):
+    __tablename__ = 'knowledge_attachments'
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('knowledge_base.id'))
+    filename = db.Column(db.String(300), nullable=False)
+    original_name = db.Column(db.String(300))
+    file_type = db.Column(db.String(50))  # image, pdf, document
+    is_image = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=get_sao_paulo_time)
 
 class SystemLog(db.Model):
     __tablename__ = 'system_logs'
