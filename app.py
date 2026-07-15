@@ -1,5 +1,6 @@
 import os
 import uuid
+import time
 import hashlib
 import pytz
 from datetime import datetime, timedelta
@@ -12,7 +13,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import bcrypt
 
 from config import Config
-from models import db, User, Department, Category, SLA, Chamado, Message, Attachment, History, Notification, QuickSolution, SolutionDepartment, SolutionUser, SolutionExecution, KnowledgeBase, SystemLog
+from models import db, User, Department, Category, SLA, Chamado, Message, Attachment, History, Notification, QuickSolution, SolutionDepartment, SolutionUser, SolutionExecution, KnowledgeBase, SystemLog, KnowledgeAttachment
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -1389,48 +1390,84 @@ def admin_delete_solution(id):
 @app.route('/knowledge-base')
 @login_required
 def knowledge_base():
-    articles = KnowledgeBase.query.filter_by(is_published=True).order_by(KnowledgeBase.views.desc()).all()
+    # Filtra por visibilidade baseada no perfil do usuário
+    query = KnowledgeBase.query.filter_by(is_published=True)
+    if current_user.profile == 'solicitante':
+        query = query.filter(KnowledgeBase.visibility.in_(['all', 'solicitante']))
+    elif current_user.profile in ['tecnico', 'admin']:
+        query = query.filter(KnowledgeBase.visibility.in_(['all', 'tecnico']))
+    articles = query.order_by(KnowledgeBase.views.desc()).all()
     return render_template('knowledge_base.html', artigos=articles)
 
 @app.route('/knowledge-base/<int:id>')
 @login_required
 def knowledge_view(id):
     article = KnowledgeBase.query.get_or_404(id)
+    
+    # Verificar visibilidade
+    if article.visibility == 'tecnico' and current_user.profile == 'solicitante':
+        abort(403)
+    if article.visibility == 'solicitante' and current_user.profile not in ['solicitante', 'admin']:
+        abort(403)
+    
     article.views = (article.views or 0) + 1
     db.session.commit()
-    return render_template('knowledge_view.html', article=article)
+    attachments = KnowledgeAttachment.query.filter_by(article_id=id).all()
+    return render_template('knowledge_view.html', article=article, attachments=attachments)
 
 @app.route('/admin/knowledge-base')
 @login_required
-@has_role('admin')
+@has_role('admin', 'tecnico')
 def admin_knowledge_base():
-    articles = KnowledgeBase.query.all()
-    return render_template('admin_knowledge_base.html', articles=articles)
+    if current_user.profile == 'tecnico':
+        articles = KnowledgeBase.query.filter_by(author_id=current_user.id).all()
+    else:
+        articles = KnowledgeBase.query.all()
+    return render_template('admin_knowledge_base.html', articles=articles, categorias=Category.query.all())
 
 @app.route('/admin/knowledge-base/novo', methods=['POST'])
 @login_required
-@has_role('admin')
+@has_role('admin', 'tecnico')
 def admin_new_article():
     title = request.form.get('title', '').strip()
     content = request.form.get('content', '').strip()
     category = request.form.get('category', '')
     tags = request.form.get('tags', '')
-    
+    visibility = request.form.get('visibility', 'all')
+
     if not title or not content:
         flash('Título e conteúdo são obrigatórios.', 'danger')
         return redirect(url_for('admin_knowledge_base'))
-    
+
     article = KnowledgeBase(
-        title=title,
-        content=content,
-        category=category,
-        tags=tags,
+        title=title, content=content, category=category,
+        tags=tags, visibility=visibility,
         author_id=current_user.id,
         created_at=now_sp()
     )
     db.session.add(article)
+    db.session.flush()
+
+    # Upload de anexos (imagens/PDFs)
+    files = request.files.getlist('attachments')
+    for f in files:
+        if f and f.filename:
+            ext = f.filename.rsplit('.', 1)[-1].lower() if '.' in f.filename else ''
+            is_img = ext in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'svg')
+            safe_name = f"kb_{article.id}_{int(time.time())}_{uuid.uuid4().hex[:8]}.{ext}"
+            path = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), safe_name)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            f.save(path)
+            attach = KnowledgeAttachment(
+                article_id=article.id, filename=safe_name,
+                original_name=f.filename,
+                file_type='image' if is_img else 'pdf' if ext == 'pdf' else 'document',
+                is_image=is_img
+            )
+            db.session.add(attach)
+
     db.session.commit()
-    flash('Artigo publicado!', 'success')
+    flash('Artigo publicado na base de conhecimento!', 'success')
     return redirect(url_for('admin_knowledge_base'))
 
 # ─── Delete Routes ─────────────────────────────────────────────────
@@ -1459,9 +1496,12 @@ def delete_category(id):
 
 @app.route('/admin/knowledge/<int:id>/delete', methods=['POST'])
 @login_required
-@has_role('admin')
+@has_role('admin', 'tecnico')
 def delete_article(id):
     article = KnowledgeBase.query.get_or_404(id)
+    if current_user.profile == 'tecnico' and article.author_id != current_user.id:
+        flash('Você só pode excluir seus próprios artigos.', 'danger')
+        return redirect(url_for('admin_knowledge_base'))
     db.session.delete(article)
     db.session.commit()
     flash('Artigo excluído!', 'success')
@@ -1479,27 +1519,45 @@ def toggle_article(id):
 
 @app.route('/knowledge-base/add', methods=['POST'])
 @login_required
-@has_role('admin')
+@has_role('admin', 'tecnico')
 def add_knowledge():
     title = request.form.get('title', '').strip()
     content = request.form.get('content', '').strip()
     category = request.form.get('category', '')
     tags = request.form.get('tags', '')
-    
+    visibility = request.form.get('visibility', 'all')
+
     if not title or not content:
         flash('Título e conteúdo são obrigatórios.', 'danger')
         return redirect(url_for('knowledge_base'))
-    
+
     article = KnowledgeBase(
-        title=title,
-        content=content,
-        category=category,
-        tags=tags,
-        author_id=current_user.id,
-        is_published=True,
+        title=title, content=content, category=category,
+        tags=tags, visibility=visibility,
+        author_id=current_user.id, is_published=True,
         created_at=now_sp()
     )
     db.session.add(article)
+    db.session.flush()
+
+    # Upload de anexos
+    files = request.files.getlist('attachments')
+    for f in files:
+        if f and f.filename:
+            ext = f.filename.rsplit('.', 1)[-1].lower() if '.' in f.filename else ''
+            is_img = ext in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'svg')
+            safe_name = f"kb_{article.id}_{int(time.time())}_{uuid.uuid4().hex[:8]}.{ext}"
+            path = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), safe_name)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            f.save(path)
+            attach = KnowledgeAttachment(
+                article_id=article.id, filename=safe_name,
+                original_name=f.filename,
+                file_type='image' if is_img else 'pdf' if ext == 'pdf' else 'document',
+                is_image=is_img
+            )
+            db.session.add(attach)
+
     db.session.commit()
     flash('Artigo publicado na base de conhecimento!', 'success')
     return redirect(url_for('knowledge_base'))
