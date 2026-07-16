@@ -332,23 +332,38 @@ def dashboard_solicitante():
 @login_required
 @has_role('tecnico', 'admin')
 def dashboard_tecnico():
-    now = now_sp()
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    # Agora o técnico usa a mesma lógica de contagem do admin para os cards superiores
+    # mas filtrado ou não dependendo da sua preferência. 
+    # Para "ambas as contas" serem iguais, vamos consolidar a lógica.
     
-    # Estatísticas do técnico
+    total = Chamado.query.count()
+    
     stats = {
-        'novos': Chamado.query.filter_by(status='novo').count(),
-        'atendimento': Chamado.query.filter_by(tecnico_id=current_user.id, status='em_atendimento').count(),
-        'pendentes': Chamado.query.filter_by(tecnico_id=current_user.id).filter(
-            Chamado.status.in_(['aguardando_usuario', 'aguardando_fornecedor', 'aguardando_peca'])
-        ).count(),
-        'resolvidos_hoje': Chamado.query.filter(
-            Chamado.tecnico_id == current_user.id,
-            Chamado.resolved_at >= today_start
-        ).count()
+        'total': total,
+        'abertos': Chamado.query.filter(Chamado.status.in_(['novo', 'em_atendimento', 'em_analise', 'pendente'])).count(),
+        'concluidos': Chamado.query.filter_by(status='concluido').count(),
+        'cancelados': Chamado.query.filter_by(status='cancelado').count(),
+        'pendentes': Chamado.query.filter_by(status='pendente').count()
     }
     
-    # Dados para gráficos
+    # Porcentagens
+    def pct(val):
+        return round((val / total * 100), 2) if total > 0 else 0
+
+    stats_pct = {
+        'abertos': pct(stats['abertos']),
+        'concluidos': pct(stats['concluidos']),
+        'cancelados': pct(stats['cancelados']),
+        'pendentes': pct(stats['pendentes'])
+    }
+
+    # Listas para o técnico (mantemos as listas de ação)
+    chamados_novos = Chamado.query.filter_by(status='novo').order_by(Chamado.created_at.desc()).limit(10).all()
+    chamados_andamento = Chamado.query.filter(
+        Chamado.status.in_(['em_analise', 'em_atendimento', 'pendente'])
+    ).order_by(Chamado.updated_at.desc()).limit(10).all()
+    
+    # Dados para gráficos (mantidos)
     chamados_por_categoria = db.session.query(
         Category.name, db.func.count(Chamado.id)
     ).join(Category, Chamado.categoria_id == Category.id).group_by(Category.name).all()
@@ -360,18 +375,50 @@ def dashboard_tecnico():
     chamados_por_departamento = db.session.query(
         Department.name, db.func.count(Chamado.id)
     ).join(Department, Chamado.department_id == Department.id).group_by(Department.name).all()
+
+    return render_template('dashboard_tecnico.html', 
+                           stats=stats, 
+                           stats_pct=stats_pct,
+                           chamados_novos=chamados_novos,
+                           chamados_andamento=chamados_andamento,
+                           chamados_por_categoria=chamados_por_categoria,
+                           chamados_por_prioridade=chamados_por_prioridade,
+                           chamados_por_departamento=chamados_por_departamento)
+
+@app.route('/admin/dashboard')
+@login_required
+@has_role('admin')
+def dashboard_admin():
+    total = Chamado.query.count()
+    stats = {
+        'total': total,
+        'abertos': Chamado.query.filter(Chamado.status.in_(['novo', 'em_atendimento', 'em_analise', 'pendente'])).count(),
+        'concluidos': Chamado.query.filter_by(status='concluido').count(),
+        'cancelados': Chamado.query.filter_by(status='cancelado').count(),
+        'pendentes': Chamado.query.filter_by(status='pendente').count()
+    }
     
-    chamados_por_mes = db.session.query(
-        db.func.strftime('%m/%Y', Chamado.created_at).label('mes'),
-        db.func.count(Chamado.id)
-    ).group_by('mes').order_by(Chamado.created_at.asc()).limit(12).all()
+    def pct(val):
+        return round((val / total * 100), 2) if total > 0 else 0
+
+    stats_pct = {
+        'abertos': pct(stats['abertos']),
+        'concluidos': pct(stats['concluidos']),
+        'cancelados': pct(stats['cancelados']),
+        'pendentes': pct(stats['pendentes'])
+    }
+
+    # Outros dados do admin (usuários, logs, etc)
+    user_count = User.query.count()
+    dept_count = Department.query.count()
+    recent_logs = SystemLog.query.order_by(SystemLog.created_at.desc()).limit(10).all()
     
-    # Listas de chamados pro painel
-    chamados_novos = Chamado.query.filter_by(status='novo').order_by(Chamado.created_at.desc()).limit(10).all()
-    chamados_andamento = Chamado.query.filter(
-        Chamado.status.in_(['em_analise', 'em_atendimento', 'pendente', 'aguardando_usuario', 'aguardando_fornecedor', 'aguardando_peca'])
-    ).order_by(Chamado.updated_at.desc()).limit(10).all()
-    chamados_concluidos = Chamado.query.filter(
+    return render_template('dashboard_admin.html', 
+                           stats=stats, 
+                           stats_pct=stats_pct,
+                           user_count=user_count, 
+                           dept_count=dept_count,
+                           recent_logs=recent_logs)
         Chamado.status.in_(['resolvido', 'finalizado', 'cancelado'])
     ).order_by(Chamado.updated_at.desc()).limit(10).all()
     
