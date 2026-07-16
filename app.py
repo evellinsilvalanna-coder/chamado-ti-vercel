@@ -331,13 +331,11 @@ def dashboard_solicitante():
 @app.route('/dashboard/tecnico')
 @login_required
 @has_role('tecnico', 'admin')
+@app.route('/dashboard/tecnico')
+@login_required
+@has_role('tecnico', 'admin')
 def dashboard_tecnico():
-    # Agora o técnico usa a mesma lógica de contagem do admin para os cards superiores
-    # mas filtrado ou não dependendo da sua preferência. 
-    # Para "ambas as contas" serem iguais, vamos consolidar a lógica.
-    
     total = Chamado.query.count()
-    
     stats = {
         'total': total,
         'abertos': Chamado.query.filter(Chamado.status.in_(['novo', 'em_atendimento', 'em_analise', 'pendente'])).count(),
@@ -346,7 +344,6 @@ def dashboard_tecnico():
         'pendentes': Chamado.query.filter_by(status='pendente').count()
     }
     
-    # Porcentagens
     def pct(val):
         return round((val / total * 100), 2) if total > 0 else 0
 
@@ -357,13 +354,11 @@ def dashboard_tecnico():
         'pendentes': pct(stats['pendentes'])
     }
 
-    # Listas para o técnico (mantemos as listas de ação)
     chamados_novos = Chamado.query.filter_by(status='novo').order_by(Chamado.created_at.desc()).limit(10).all()
     chamados_andamento = Chamado.query.filter(
         Chamado.status.in_(['em_analise', 'em_atendimento', 'pendente'])
     ).order_by(Chamado.updated_at.desc()).limit(10).all()
     
-    # Dados para gráficos (mantidos)
     chamados_por_categoria = db.session.query(
         Category.name, db.func.count(Chamado.id)
     ).join(Category, Chamado.categoria_id == Category.id).group_by(Category.name).all()
@@ -385,7 +380,7 @@ def dashboard_tecnico():
                            chamados_por_prioridade=chamados_por_prioridade,
                            chamados_por_departamento=chamados_por_departamento)
 
-@app.route('/admin/dashboard')
+@app.route('/dashboard/admin')
 @login_required
 @has_role('admin')
 def dashboard_admin():
@@ -408,52 +403,15 @@ def dashboard_admin():
         'pendentes': pct(stats['pendentes'])
     }
 
-    # Outros dados do admin (usuários, logs, etc)
     user_count = User.query.count()
     dept_count = Department.query.count()
-    recent_logs = SystemLog.query.order_by(SystemLog.created_at.desc()).limit(10).all()
     
     return render_template('dashboard_admin.html', 
                            stats=stats, 
                            stats_pct=stats_pct,
                            user_count=user_count, 
-                           dept_count=dept_count,
-                           recent_logs=recent_logs)
-        Chamado.status.in_(['resolvido', 'finalizado', 'cancelado'])
-    ).order_by(Chamado.updated_at.desc()).limit(10).all()
-    
-    return render_template('dashboard_tecnico.html', stats=stats,
-                          chamados_por_categoria=chamados_por_categoria,
-                          chamados_por_prioridade=chamados_por_prioridade,
-                          chamados_por_departamento=chamados_por_departamento,
-                          chamados_por_mes=chamados_por_mes,
-                          chamados_novos=chamados_novos,
-                          chamados_andamento=chamados_andamento,
-                          chamados_concluidos=chamados_concluidos)
+                           dept_count=dept_count)
 
-@app.route('/dashboard/admin')
-@login_required
-@has_role('admin')
-def dashboard_admin():
-    now = now_sp()
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    
-    total = Chamado.query.count()
-    abertos = Chamado.query.filter(Chamado.status.in_(['novo', 'em_analise'])).count()
-    atendimento = Chamado.query.filter_by(status='em_atendimento').count()
-    finalizados = Chamado.query.filter(Chamado.status.in_(['finalizado', 'cancelado'])).count()
-    
-    # SLA
-    sla_cumprido = Chamado.query.filter_by(sla_breached=False).filter(
-        Chamado.status.in_(['resolvido', 'finalizado'])
-    ).count()
-    sla_vencido = Chamado.query.filter_by(sla_breached=True).filter(
-        Chamado.status.in_(['resolvido', 'finalizado'])
-    ).count()
-    
-    return render_template('dashboard_admin.html', 
-                          total=total, abertos=abertos, atendimento=atendimento, finalizados=finalizados,
-                          sla_cumprido=sla_cumprido, sla_vencido=sla_vencido)
 
 # ─── Chamados ───────────────────────────────────────────────────────
 
