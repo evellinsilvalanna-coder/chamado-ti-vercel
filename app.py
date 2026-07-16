@@ -331,9 +331,6 @@ def dashboard_solicitante():
 @app.route('/dashboard/tecnico')
 @login_required
 @has_role('tecnico', 'admin')
-@app.route('/dashboard/tecnico')
-@login_required
-@has_role('tecnico', 'admin')
 def dashboard_tecnico():
     total = Chamado.query.count()
     stats = {
