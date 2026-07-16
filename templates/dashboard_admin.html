@@ -1,136 +1,104 @@
 {% extends "base.html" %}
-{% block title %}Dashboard Administrativo{% endblock %}
-{% block page_title %}Admin - Visão Geral{% endblock %}
-{% block page_subtitle %}Indicadores completos do Service Desk{% endblock %}
+{% block title %}Dashboard Admin{% endblock %}
+{% block page_title %}Painel de Administração{% endblock %}
 
 {% block content %}
+<style>
+    .dash-card {
+        border-radius: 8px;
+        color: white;
+        padding: 20px;
+        height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        text-decoration: none;
+        transition: transform 0.2s;
+    }
+    .dash-card:hover {
+        transform: translateY(-5px);
+        color: white;
+    }
+    .card-val { font-size: 2rem; font-weight: bold; line-height: 1; }
+    .card-label { font-size: 0.9rem; font-weight: 500; }
+    .card-pct { font-size: 0.8rem; opacity: 0.9; }
+
+    .bg-total { background-color: #2c7a7b; } 
+    .bg-abertos { background-color: #9f7aea; }
+    .bg-concluidos { background-color: #38a169; }
+    .bg-pendentes { background-color: #e53e3e; }
+    .bg-cancelados { background-color: #dd6b20; }
+</style>
+
 <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-        <div class="stat-card stat-blue">
-            <div class="stat-icon"><i class="bi bi-ticket-perforated"></i></div>
-            <div class="stat-info">
-                <span class="stat-value">{{ total }}</span>
-                <span class="stat-label">Total de Chamados</span>
+    <div class="col-12 col-md">
+        <div class="dash-card bg-total">
+            <div class="card-val">{{ stats.total }}</div>
+            <div class="card-label">Total Chamados</div>
+        </div>
+    </div>
+    <div class="col-12 col-md">
+        <div class="dash-card bg-abertos">
+            <div class="card-val">{{ stats.abertos }}</div>
+            <div>
+                <div class="card-pct">({{ stats_pct.abertos }}%)</div>
+                <div class="card-label">Abertos</div>
             </div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="stat-card stat-warning">
-            <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
-            <div class="stat-info">
-                <span class="stat-value">{{ abertos }}</span>
-                <span class="stat-label">Abertos / Em Análise</span>
+    <div class="col-12 col-md">
+        <div class="dash-card bg-concluidos">
+            <div class="card-val">{{ stats.concluidos }}</div>
+            <div>
+                <div class="card-pct">({{ stats_pct.concluidos }}%)</div>
+                <div class="card-label">Concluídos</div>
             </div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="stat-card stat-info">
-            <div class="stat-icon"><i class="bi bi-gear-wide-connected"></i></div>
-            <div class="stat-info">
-                <span class="stat-value">{{ atendimento }}</span>
-                <span class="stat-label">Em Atendimento</span>
+    <div class="col-12 col-md">
+        <div class="dash-card bg-pendentes">
+            <div class="card-val">{{ stats.pendentes }}</div>
+            <div>
+                <div class="card-pct">({{ stats_pct.pendentes }}%)</div>
+                <div class="card-label">Pendentes</div>
             </div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="stat-card stat-success">
-            <div class="stat-icon"><i class="bi bi-check2-all"></i></div>
-            <div class="stat-info">
-                <span class="stat-value">{{ finalizados }}</span>
-                <span class="stat-label">Finalizados</span>
+    <div class="col-12 col-md">
+        <div class="dash-card bg-cancelados">
+            <div class="card-val">{{ stats.cancelados }}</div>
+            <div>
+                <div class="card-pct">({{ stats_pct.cancelados }}%)</div>
+                <div class="card-label">Cancelados</div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
-            <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
-            <div class="stat-info">
-                <span class="stat-value">{{ sla_cumprido }}</span>
-                <span class="stat-label">SLA Cumprido</span>
-            </div>
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm text-center p-4">
+            <i class="bi bi-people display-4 text-primary mb-2"></i>
+            <h3>{{ user_count }}</h3>
+            <p class="text-muted">Usuários Cadastrados</p>
         </div>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
-            <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
-            <div class="stat-info">
-                <span class="stat-value">{{ sla_vencido }}</span>
-                <span class="stat-label">SLA Vencido</span>
-            </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm text-center p-4">
+            <i class="bi bi-building display-4 text-success mb-2"></i>
+            <h3>{{ dept_count }}</h3>
+            <p class="text-muted">Departamentos</p>
         </div>
     </div>
-</div>
-
-<!-- Cards de Acesso Rápido -->
-<div class="row g-3">
     <div class="col-md-4">
-        <a href="{{ url_for('admin_users') }}" class="text-decoration-none">
-            <div class="card h-100 hover-shadow border-0 shadow-sm">
-                <div class="card-body text-center py-4">
-                    <div class="icon-circle bg-primary text-white mx-auto mb-3"><i class="bi bi-people fs-3"></i></div>
-                    <h5>Usuários</h5>
-                    <p class="text-muted small">Gerenciar cadastros e permissões</p>
-                </div>
+        <div class="card shadow-sm p-4">
+            <h6 class="mb-3">Ações Rápidas</h6>
+            <div class="d-grid gap-2">
+                <a href="{{ url_for('admin_usuarios') }}" class="btn btn-outline-primary btn-sm">Gerenciar Usuários</a>
+                <a href="{{ url_for('admin_categorias') }}" class="btn btn-outline-secondary btn-sm">Categorias/SLAs</a>
             </div>
-        </a>
-    </div>
-    <div class="col-md-4">
-        <a href="{{ url_for('admin_departments') }}" class="text-decoration-none">
-            <div class="card h-100 hover-shadow border-0 shadow-sm">
-                <div class="card-body text-center py-4">
-                    <div class="icon-circle bg-success text-white mx-auto mb-3"><i class="bi bi-building fs-3"></i></div>
-                    <h5>Departamentos</h5>
-                    <p class="text-muted small">Gerenciar departamentos e categorias</p>
-                </div>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-4">
-        <a href="{{ url_for('admin_sla') }}" class="text-decoration-none">
-            <div class="card h-100 hover-shadow border-0 shadow-sm">
-                <div class="card-body text-center py-4">
-                    <div class="icon-circle bg-warning text-white mx-auto mb-3"><i class="bi bi-clock-history fs-3"></i></div>
-                    <h5>SLA</h5>
-                    <p class="text-muted small">Configurar prazos e alertas</p>
-                </div>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-4">
-        <a href="{{ url_for('admin_solutions') }}" class="text-decoration-none">
-            <div class="card h-100 hover-shadow border-0 shadow-sm">
-                <div class="card-body text-center py-4">
-                    <div class="icon-circle bg-info text-white mx-auto mb-3"><i class="bi bi-tools fs-3"></i></div>
-                    <h5>Soluções Rápidas</h5>
-                    <p class="text-muted small">Gerenciar autoatendimento</p>
-                </div>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-4">
-        <a href="{{ url_for('admin_reports') }}" class="text-decoration-none">
-            <div class="card h-100 hover-shadow border-0 shadow-sm">
-                <div class="card-body text-center py-4">
-                    <div class="icon-circle bg-danger text-white mx-auto mb-3"><i class="bi bi-graph-up fs-3"></i></div>
-                    <h5>Relatórios</h5>
-                    <p class="text-muted small">Indicadores e exportação de dados</p>
-                </div>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-4">
-        <a href="{{ url_for('admin_logs') }}" class="text-decoration-none">
-            <div class="card h-100 hover-shadow border-0 shadow-sm">
-                <div class="card-body text-center py-4">
-                    <div class="icon-circle bg-secondary text-white mx-auto mb-3"><i class="bi bi-journal-text fs-3"></i></div>
-                    <h5>Logs do Sistema</h5>
-                    <p class="text-muted small">Registro completo de ações</p>
-                </div>
-            </div>
-        </a>
+        </div>
     </div>
 </div>
 {% endblock %}
